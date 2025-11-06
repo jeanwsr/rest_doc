@@ -40,7 +40,7 @@ if html_theme == 'pydata_sphinx_theme':
             {
                 "name": "Gitee",
                 "url": "https://gitee.com/restgroup/rest",
-                "icon": "fa-gitee",
+                "icon": "fa-brands fa-git",
                 "type": "fontawesome",
             },
         ],
