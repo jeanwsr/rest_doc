@@ -1,0 +1,35 @@
+.sphinx-language-switcher {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.language-select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 200px;
+}
+
+.language-select:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.25);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .sphinx-language-switcher {
+        text-align: center;
+    }
+    
+    .language-select {
+        max-width: 150px;
+    }
+}
