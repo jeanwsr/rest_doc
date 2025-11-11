@@ -22,3 +22,4 @@ help:
 multilang:
 	SPHINX_LANGUAGE=en $(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)"/html/en $(SPHINXOPTS) $(O)
 	SPHINX_LANGUAGE=zh_CN $(SPHINXBUILD) -D language=zh_CN -b html "$(SOURCEDIR)_zh" "$(BUILDDIR)"/html/zh_CN $(SPHINXOPTS) $(O)
+	cp index.html build/html/index.html
