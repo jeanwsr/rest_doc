@@ -2,7 +2,7 @@
 html_theme.sidebar_secondary.remove: true
 ---
 
-# Welcome to RESTdoc
+# REST Documentation
 
 
 ```{toctree}

@@ -2,7 +2,9 @@
 html_theme.sidebar_secondary.remove: true
 ---
 
-# Welcome to RESTdoc
+# REST 文档
+
+REST（Rust-based Electronic Structure Toolkit）是基于革命性 Rust 语言构建的新一代电子结构计算平台。
 
 
 ```{toctree}
