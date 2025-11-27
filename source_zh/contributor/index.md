@@ -3,5 +3,6 @@
 ```{toctree}
 :maxdepth: 2
 ri
-grad
+grad-rhf
+grad-uhf
 ```
