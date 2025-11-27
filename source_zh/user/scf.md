@@ -21,3 +21,20 @@
 - `scf_acc_etot`: 取值f64。自洽场运算总能量的收敛标准。缺省为1.0e-8
 - `level_shift`: 取值f64。对于发生近简并振荡不收敛的情况，可以采用level_shift的方式人为破坏简并，加速收敛。单位为hartree，缺省值为0.0
 - `start_check_oscillation`: 取值i32。开始检查并自洽场计算不收敛发生振荡的循环数。当监控到自洽场发生振荡，SCF能量上升的情况，开启一次线性混合方案（linear）。缺省为20
+
+## RI 设置
+
+- `algorithm_jk`: 设置 Fock 矩阵计算中 J (Coulomb) 和 K (Exchange) 两部分的算法：
+    - `ri-direct`: 强制使用 direct RI 算法。对于 RI-K 部分，取决于内存大小，可能会使用 semi-direct 算法 (储存相对较小的 $O(N^3)$ 的 $g_{\mu i, P}$)。
+    - `ri-incore`: 强制使用 incore RI 算法 (储存完整的 Cholesky decomposed 3c-2e ERI $Y_{\mu \nu, P}$)。该算法对内存需求较大，但计算速度更快。
+    - `ri`: 自动选择 incore 或 direct RI 算法，取决于自洽场计算前内存大小；在内存空间较大时选择更快的 incore 方法，内存空间较小时选择 ri-direct 方法。
+    - `default`: 目前同 `ri`。
+- `algorithm_j`: 设置 Fock 矩阵计算中 J (Coulomb) 部分的算法；该关键词是高级选项，一般用户建议使用`algorithm_jk`关键词进行整体设置。
+    - 下述选项同 `algorithm_jk`：`ri-direct`, `ri-incore`, `ri`, `default`。
+- `algorithm_k`: 设置 Fock 矩阵计算中 K (Exchange) 部分的算法；该关键词是高级选项，一般用户建议使用`algorithm_jk`关键词进行整体设置。
+    - 下述选项同 `algorithm_jk`：`ri-direct`, `ri-incore`, `ri`, `default`。
+
+<!-- 我们以后很可能需要增加更多 J 和 K 的算法，例如 J 的 multi-grids、multipole、McMurchie-Davidson 算法，K 的 COSX、aCOSX 算法等等，或引入李之韵等人已经实现的 ISDF。
+该关键词在未来可以用于扩展这些算法。未来可能会有更多的性质 (如梯度、TDDFT 等)，该关键词也可以用于指定这些性质的 J 和 K 的计算算法。 -->
+
+direct-RI 算法需要配合关键词 `max_memory` 使用。目前该关键词是以 MB 为单位指定可用内存大小；未来可能可以允许用户使用更方便的带单位字符串。
