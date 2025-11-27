@@ -28,6 +28,7 @@ author = 'REST developers'
 
 extensions = [
     "myst_parser",
+    "sphinx.ext.mathjax",
 ]
 
 templates_path = ['_templates']
@@ -85,3 +86,11 @@ if html_theme == 'pydata_sphinx_theme':
         "show_prev_next": False,
         # "navbar_align": "left",
     }
+
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "html_image",
+]
