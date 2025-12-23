@@ -1,26 +1,157 @@
-# Input Card Structure
+# 输入卡基本格式
 
-## Molecular structure
+输入卡是 REST 程序的主要输入文件，包含了程序执行计算所需的各种参数和选项以及对应的计算体系。REST 输入卡采用 [TOML](https://toml.io/cn/) (Tom's Obivious, Minimal Language) 配置文件格式编写，通常以 `.in` 为文件扩展名。输入卡由多个部分组成，以 TOML 文件的表格（table）形式组织，即 `[section_name]` 形式的行标题。
 
-## Basis sets
+对于一个常见的、执行基本计算任务（如自洽场/后自洽场的单点能计算）的 REST 输入卡，须包含两个主要输入块（input section），即 `[ctrl]` 与 `[geom]`， 分别用于声明计算任务的控制参数和计算体系的几何结构信息。例如，对于一个水分子单点能计算的 REST 输入卡，内容如下所示：
 
-- `eri_type`: 取值String类型。自洽场运算中的四中心积分计算方法，目前REST支持：
-    1. `analytic`: 四中心积分的解析计算方法，使用libcint库实现
-	1. `ri-v`: 全称为resolution of identity，又名density fitting，是对四中心积分进行张量分解后的近似算法。(缺省)
-	- **注意：REST中的analytic算法并未被充分优化，仅供程序开发测评使用，不建议在实际计算中使用**
-- `basis_type`: 取值String类型。使用高斯基组的类型，有Spheric及Cartesian两种选择。Spheric对应球谐型基函数，Cartesian对应笛卡尔型基函数。缺省为spheric
-- `basis_path`: 取值String类型，无缺省值。计算所使用的基组所在位置。若所用基组为cc-pVTZ, 则应为`{basis_set_pool}/cc-pVTZ`；若所用基组为STO-3G, 则应为`{basis_set_pool}/STO-3G`。其中`{basis_set_pool}`是具体基组文件夹所在的根目录。**注意：基组信息高度依赖于具体的计算体系，因此没有缺省值，必须在输入卡中声明**。
-- `auxbas_path`: 取值String类型，无缺省值。计算所使用的辅助基组所在位置。辅助基组通常与常规基组放置在相同的文件夹下(`{basis_set_pool}`)。使用最广泛的辅助基组为`def2-SV(P)-JKFIT`，则申明方式应为`auxbas_path={basis_set_pool}/def2-SV(P)-JKFIT`。**注意：辅助基组信息高度依赖于具体的计算体系，因此没有缺省值。如果使用RI-V的近似方法，则必须在输入卡中声明。若`eri_type=anlaytic`，则无需使用辅助基组，也就不用申明auxbas_path**。
+```toml
+[ctrl]
+    print_level =               1
+    num_threads =               2
+    job_type    =               "energy"
+    xc =                        "hf"
+    basis_path =                "cc-pVDZ"
+    auxbas_path =               "def2-SV(P)-JKFIT" 
+    charge =                    0.0
+    spin =                      1.0
 
-`basis_path`和`auxbas_path`中，`{basis_set_pool}`可以省略，例如只写 `cc-pVTZ`。REST 将自动从某些默认路径搜索该文件，优先级为：
-  1. 环境变量 `REST_BASIS_DIR`；
-  2. 内置路径 `/opt/rest_workspace/rest/basis-set-pool/` （REST docker 的默认基组路径）；
-  3. `$REST_HOME/rest/basis-set-pool/`
+[geom]
+    name = "H2O"
+    unit = "angstrom"
+    position = '''
+      O      0.455690      -0.855147      -1.077445
+      H      0.170794      -1.689090      -1.471455
+      H      1.416521      -0.938770      -1.036458
+    '''
+```
 
-若以上搜索都不成功则尝试使用 bse 下载。
+可见，输入卡以键值对 (key-value) 的形式设置计算相关的关键词，对于一个通常的 REST 计算任务，输入卡中一些关键词的设置是必需的，这主要涉及用户希望调用的**计算方法**，包括具体的**电子结构方法**、计算所使用的**基组**和具体的**计算任务**，以及**计算体系**相关的声明，而对于其他的 REST 程序内置关键词，均存在对应的缺省（default）设置，用户也可依据自身需要对相关参数进行设置，其中也包括一些**全局关键词**。关于 REST 程序的关键词，我们将在本文档的后续相关部分进行详细的说明，并展示具体的输入卡示例。此外，我们也在 [REST 仓库](https://gitee.com/restgroup/rest) 提供了相关的说明文档，详细罗列了大部分的关键词及其对应的功能和缺省设置，读者可前往进行概览。
 
-`basis_path` 申明的路径本身已经存在时，其优先级高于以上所有的搜索路径。可以是完整路径，也可以是相对路径，例如`./my_basis`、`my_basis`。
-REST程序对于基组的使用是高度自由和自定义的，可以根据具体的计算任务，从基组网站上下载、修改或者混合使用不同的基组。你所需要做的是：
-  1. 在`{basis_set_pool}`基组文件夹下创建一个新的基组文件夹。比如你想使用混合基组，并取名这个混合基组名称为mix_bs_01。则需要创建一个基组文件夹为：`mkdir {basis_set_pool}/mix_bs_01`
-  2. 然后将这些基组以”元素名称.json”放置在`{basis_set_pool}/mix_bs_01`的文件夹内
-  3. 在输入卡内申明`basis_path = {basis_set_pool}/mix_bs_01`（自定义辅助基组则申明`auxbas_path`）
+为助您更有效的编写与理解 REST 输入卡的内容，我们在这里作一些简单的提醒：
+
+1. TOML 文件是大小写敏感的，须是合法的 UTF-8 编码的 Unicode 文档。
+2. TOML 格式文档支持通过 `#` 进行单行/多行注释，注释的内容不会被后续程序解析。
+3. 对于键值对，键名在等号的左边，值在右边，键名和键值周围的空白会被忽略。
+4. 在 REST 输入卡中，关键词参数（值）的数据格式包括字符串 (String)、整数 (i32)、浮点数 (f64)、布尔值 (bool)、以及数组 (Vec 或 [ ])，圆括号中的符号代表它们对应于 Rust 语言中的变量类型，即 REST 程序中处理的变量类型。
+
+下面，我们对部分主要的输入卡关键词及其设置进行说明。
+
+## 全局关键词
+
+目前，REST 程序的全局关键词（系统设置相关关键词）包括：
+
+- `print_level`: 程序输出等级，数字越大，输出信息量越多，0 表示完全无输出，缺省值为 1。
+
+- `num_threads`: 任务最大可调用线程数目，缺省为 1。
+
+- `max_memory`: 程序可使用的最大内存，单位为 MB。缺省不设置，使用当前节点所有可用内存。
+
+  在当前版本，`max_memory` 在程序运行时会作一次判断，若程序通过对用户声明的计算任务估算的内存消耗超过 `max_memory` 的设定值，则程序默认报错退出。这一保护机制可通过设置关键词 `abort_on_mem_exceed = false` 进行静默，则程序仍会执行运算，通常我们不推荐用户进行这一设置。后续，我们将持续对程序内存管理进行完善，通过算法的演进支持程序在显著内存消耗的计算任务上的稳定、高效与安全。
+
+## 计算体系的声明
+
+关于计算体系的几何结构信息，主要在 `[geom]` 输入表中声明。`[geom]` 主要包括 3 个关键词的设置，即
+
+- `name`：表示分子体系的名称的字符串，用于标记计算任务的注释。
+
+- `unit`：体系 xyz 坐标所采用的长度单位，以字符串表示，目前支持：angstrom 和 bohr。
+
+- `position`：分子体系的几何坐标，目前支持 xyz 格式的声明，以多行字符串表示，每行代表一个原子的种类（atom type）与位置坐标，无标点符号分隔，即
+
+   ```toml
+   position = '''
+   atom_type_1  position_x1  position_y1  position_z1
+   atom_type_2  position_x2  position_y2  position_z2
+   ...
+   atom_type_m  position_xm  position_ym  position_zm
+   '''
+   ```
+
+同时，对于分子体系，还需要明确计算的电子态，包括体系的净电荷数与自旋多重度，对应的关键词为
+
+- `charge`：体系总的净电荷数，以浮点数声明。
+
+- `spin`: 体系的自旋多重度，以整数声明，对应于 `2S+1`，`S` 表示体系的总自旋量子数，即自旋单电子数的一半。
+
+需要注意的是，在 REST 输入卡中，上述两个关键词是在 `[ctrl]` 中进行声明的，而非在 `[geom]` 中。
+
+## 计算方法的声明
+
+对于计算化学的常见任务，计算方法的构成主要包括用户选择的**电子结构方法**与**基组**，配合具体的**计算任务**，共同决定了程序执行的计算内容与输出结果。下面，我们将针对这些部分的主要关键词进行说明，输入卡其他的关键词设置，可以认为是对具体计算任务的客制化设定，如自洽场收敛、构型优化、波函数分析等，读者可参考后续的相关文档进行进一步了解。
+
+### 电子结构方法
+
+电子结构方法的选择决定了计算化学任务的理论层次，是影响计算结果精度与效率的关键。目前，REST 程序支持的电子结构方法包括波函数方法（WFT）与密度泛函理论 (DFT) 方法，且主要集中在基于单行列式波函数 (single determinant) 下的密度泛函近似方法 (DFA)。在输入卡中，电子结构方法的选择主要通过 `[ctrl]` 输入表中的 `xc` 关键词进行声明。REST 程序支持多种常见的密度泛函近似方法，特别是高等级密度泛函中的 XYG3 型双杂化泛函 (xDH) 及其变体，用户可以使用标准的命名方式进行选择。
+
+`xc` 的取值为字符串类型，目前支持的常见方法包括：
+
+0. 波函数方法：HF、MP2
+1. 局域密度近似泛函（LDA）: SVWN
+2. 广义梯度近似泛函（GGA）: PBE、BLYP、xPBE、XBLYP
+3. 动能密度泛函（meta-GGA）: TPSS、M06-L、MN15-L、SCAN、r2SCAN ($r^2$-SCAN)
+4. 杂化泛函（Hybrid GGA）: B3LYP、X3LYP、PBE0、M06-2X、MN15、SCAN0、TPSSh
+5. 双杂化泛函（Double Hybrid）: XYG3、XYGJ-OS、XYG7、xDH-PBE0、B2PLYP、B2GP-PLYP、DSD-BLYP、DSD-PBEP86
+6. RPA 型泛函 （RPA-like functionals）: RPA@PBE、RPA@B3LYP、scs-RPA、R-xDH7
+
+需要指出的是，尽管 TOML 格式对字符串的大小写敏感，但在 REST 输入卡中，`xc` 关键词的取值对大小写不敏感，即用户可以使用大写或小写字母进行声明，例如 `xc="hf"` 与 `xc="HF"` 均表示调用 Hartree-Fock 方法。对于方法名称中存在连字符（-）的情况，目前，需要用户参见后续的文档说明，使用正确的形式进行声明，例如 `XYGJ-OS` 的正确声明方式是 `XYGJOS`。
+
+### 基组
+
+目前，REST 程序使用高斯型基函数 (Gaussian Type Orbitals, GTOs) 作为程序运算的基组函数。用户可以在输入卡中通过 `[ctrl]` 输入表中的 `basis_path` 关键词声明所使用的基组。此外，REST 程序默认开启对四中心电子积分的 RI 近似计算方法 (resolution of identity)，这是一种基于密度拟合 (density fitting) 技术的张量分解近似算法，可显著提升自洽场与后自洽相关能计算的效率，用户可通过 `auxbas_path` 关键词声明所使用的辅助基组 (auxiliary basis)，而在用户不额外声明辅助基组时，目前 REST 程序统一使用 `def2-universal-JKFIT` 作为缺省的辅助基组。
+
+REST 程序内置了多种常见的基组与辅助基组，相关基组文件位于程序源码的 `basis-set-pool` 目录下。对于通过 conda 或 docker 安装的 REST 版本，可检查环境变量 `REST_BASIS_DIR` 找到相关路径。目前，用户也可以通过在输入卡中指定特定的基组文件路径，来使用自定义的基组与辅助基组。关于这部分的内容，具体可参见 [基组](./basis_set.md) 章节的说明。
+
+## 计算任务
+
+计算任务决定了程序执行的具体内容与输出结果。在 REST 输入卡中，计算任务主要通过 `[ctrl]` 中的 `job_type` 关键词声明，目前的选项包括：
+
+1. `energy`: 单点能量计算（缺省）。等价设置有 `single point`, `single_point` 等
+2. `opt`: 基于力的构型优化。等价设置有 `geometry optimization`, `relax`, `geom_opt` 等
+3. `force`: 计算当前结构下的受力。等价设置有 `gradient`
+4. `numerical dipole`: 计算数值差分偶极。等价设置有 `numdipole`
+
+### 针对于特定方法或计算任务的输入表
+
+在进行一些特定的计算任务时，可能需要额外的输入表格 (input section) 来声明对于相关方法的参数控制。例如，在使用 REST 结合 geomTRIC 引擎进行分子构型优化时，可以通过 `[geometric_pyo3]` 输入表来声明 geomTRIC 相关的参数设置，包括优化算法的收敛标准、约束条件以及是否进行振动分析等，具体关键词说明可参见后续的 [构型优化](./geomopt.md) 章节；同样地，在调用格林函数方法 (GW) 进行计算时，用户可在 `[quasiparticle_methods]` 输入表中进行相关的参数控制，同样可参见后续的 [GW 方法](./gw.md) 章节。
+
+可以预见，随着 REST 程序的不断扩展，未来会引入更多的计算方法与功能，为了避免后续对于输入卡主体的较大改动与扩充，我们鼓励开发者使用输入表形式作为子区块进行参数声明与控制，以避免可能的冲突。这对于后续文档的维护、查阅与更新也更加友好。
+
+## REST 输出
+
+执行单点能计算时，REST 输出的内容主要包括以下几部分：输入卡计算设置摘要、SCF 计算过程信息、最终能量结果等，例如一个通常的自洽场计算正常执行完毕的输出为：
+
+```text
+====================================================
+              REST: Mission accomplished
+====================================================
+The SCF energy        :     -56.5558970393 Ha
+Detailed time report:
+SCF       |:    8.116 s for the scf procedure
+Overall   |:    8.117 s for the whole job
+```
+
+若执行后自洽场方法或双杂化泛函的单点能计算时，输出内容会包括更多部分，例如后自洽相关能的计算结果摘要，而在输出的最后部分，预计显示为：
+
+```text
+====================================================
+              REST: Mission accomplished
+====================================================
+The SCF energy        :     -56.5529304222 Ha
+The (R)-xDH energy    :     -56.2078698195 Ha
+Detailed time report:
+SCF       |:    6.948 s for the scf procedure
+Overall   |:    7.062 s for the whole job
+PT2       |:    0.114 s for the PT2 evaluation
+```
+
+包含了 SCF 能量与统计了后自洽相关能的总能量结果与计算耗时摘要。当用户调高了输出等级 (`print_level`) 时，输出内容会更加详细，包含更多的计算过程信息，例如每次 SCF 迭代的能量收敛细节等。
+而对于其他的计算任务，输出内容会有所不同，具体可参见后续相关章节的说明。
+
+此外，REST 也支持存储各类格式的波函数文件，支持后续的计算与波函数分析功能，相关的选项需在 `outputs` 中声明，该关键词接收一个字符串数组作为输入值，表示所需输出的文件格式，目前支持的格式包括：
+
+- `fchk`　    Gaussian程序的 formatted checkpoint 文件
+- `cube_orb`  格点化的轨道文件信息
+- `molden`　　结果输出为molden程序的格式
+- `geometry`  输出分子结构文件
+
+用户可声明上述格式中的一个或几个，具体可见 [自洽场计算](./scf.md) 的相关说明与示例。
