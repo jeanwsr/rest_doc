@@ -16,14 +16,10 @@ conda create -n rest python=3.11 -c conda-forge
 
 ```sh
 conda activate rest
-conda install rest -c restgroup -c mokit/label/cf -c conda-forge
+conda install rest -c restgroup -c mokit -c conda-forge
 ```
 
-其中，`-c` 选项分别指定 REST 程序以及外部库 mokit 所在的安装管道（channel）。对于系统 GLIBC 版本较低的用户 (<=2.27, 通过 `ldd --version` 检查)，请使用以下命令安装 REST 程序
-
-```sh
-conda install rest -c restgroup/label/oldkernel -c mokit/label/cf -c conda-forge
-```
+其中，`-c` 选项分别指定 REST 程序以及外部库 mokit 所在的安装管道（channel）。
 
 若用户希望在当前环境（rest）中安装其他 python 库或工具，可通过 `conda install [package_name] -c conda-forge` 命令安装，推荐优先使用 conda-forge 作为安装管道（channel），以避免依赖冲突，推荐用户将 `conda-forge` 设置为默认的安装管道，具体做法可参考 [conda-forge 文档](https://forge.conda.org.cn/docs/user/introduction/)。
 
