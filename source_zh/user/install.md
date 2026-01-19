@@ -105,3 +105,11 @@ docker build -t rest:latest -f ./Dockerfile.abini .
 ## 从源码编译
 
 用户可以从代码仓库中拉取 REST 程序源码，在确保 REST 程序依赖的外部库完整的前提条件下，使用 Rust 语言的包管理器 Cargo 编译 REST 源码，获得可执行文件。这样的好处在于可以最大程度的保证 REST 的计算性能，同时可以通过编译选项，实现功能化定制。目前，在团队 [Gitee 仓库](https://gitee.com/restgroup/rest_workspace) 下，提供了大致的程序编译流程，包括 Rust 编译器与包管理器 Cargo 的安装，REST 外部依赖的构建以及 REST 程序源码的获取与编译的完整流程，供有兴趣参与开发的研究者参考。
+
+### 结合 conda 依赖的源码编译
+
+* 通过系统安装 gcc, gfortran, g++, libclang
+* 使用 conda 安装其余的依赖
+* 设置 `REST_HOME`, `REST_EXT_DIR`, `HDF5_DIR`. 通过 `cp -d` 复制动态库。
+* `OMPI_CC=gcc cargo build`
+* 设置 `LD_LIBRARY_PATH`
