@@ -108,8 +108,21 @@ docker build -t rest:latest -f ./Dockerfile.abini .
 
 ### 结合 conda 依赖的源码编译
 
-* 通过系统安装 gcc, gfortran, g++, libclang
+* 下载 rest_workspace 源码到本地，如 `$HOME/rest_workspace`，并下载其中 rest 等项目的源码。
+* 通过系统安装 gcc, gfortran, g++, libclang. 例如，在 ubuntu 系统中 `sudo apt-get install build-essential libclang-dev`
 * 使用 conda 安装其余的依赖
-* 设置 `REST_HOME`, `REST_EXT_DIR`, `HDF5_DIR`. 通过 `cp -d` 复制动态库。
+```
+conda create -n rest-build python=3.11 -c conda-forge
+conda activate rest-build
+conda install hdf5 libcint openblas[build=openmp*] libxc-c openmpi=4 geometric simple-dftd3 dftd4 mokit -c conda-forge -c mokit
+```
+* 设置环境变量 
+```
+export REST_HOME=$HOME/rest_workspace
+export REST_EXT_DIR=$HOME/rest_deps/lib
+export HDF5_DIR=$CONDA_PREFIX
+```
+复制动态库。`cp -d $CONDA_PREFIX/lib/*.so.* $REST_EXT_DIR`
+`cp -d ${CONDA_PREFIX}/lib/python${PY_VER}/site-packages/mokit/lib/librest2fch.so  $REST_EXT_DIR`
 * `OMPI_CC=gcc cargo build`
 * 设置 `LD_LIBRARY_PATH`
