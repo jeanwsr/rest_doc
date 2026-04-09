@@ -2,7 +2,7 @@
 
 ```{toctree}
 :maxdepth: 2
-ri
+ri-jk/index
 grad-rhf
 grad-uhf
 ```
