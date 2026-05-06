@@ -1,3 +1,5 @@
+# parse_xc
+
 为了解决任意的泛函输入的问题，仿照 pyscf 的 parse_xc 和 ajz34/dh 的扩展写了一个新的 xc_parser。在 REST 程序中可以如下使用
 ```
 xc = "B3LYP"
