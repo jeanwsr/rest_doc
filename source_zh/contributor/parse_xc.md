@@ -133,6 +133,8 @@ References:
   10.1073/pnas.0901093106
 ```
 
+支持的双杂化泛函列表见 `src/dft/parse_xc/*json`。
+
 若用户需要自定义多步泛函，可以指定环境变量 REST_DATA_DIR，在该目录下创建文件xc_*.json，其内容如
 ```
 {
