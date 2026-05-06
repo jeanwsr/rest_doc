@@ -4,7 +4,7 @@
 
 ## 通过 Conda 安装
 
-REST 程序已成功发布在 Anaconda，允许用户通过 [Conda](https://docs.conda.org.cn/projects/conda/en/stable/user-guide/getting-started.html) 直接安装 REST 可执行程序（二进制文件）。目前，我们只支持 Linux 系统下的 Conda 安装，MacOS 系统暂不支持，预计在将来会上线对应的分发。对于 Windows 用户，须使用 [WSL](https://learn.microsoft.com/zh-cn/windows/wsl/install) (Windows Subsystem for Linux) 安装 Conda 以及 REST 程序。
+REST 程序已成功发布在 Anaconda，允许用户通过 [Conda](https://docs.conda.org.cn/projects/conda/en/stable/user-guide/getting-started.html) 直接安装 REST 可执行程序（二进制文件）。目前，我们支持 Linux x86-64 及 MacOS Arm64 系统下的 Conda 安装。对于 Windows 用户，须使用 [WSL](https://learn.microsoft.com/zh-cn/windows/wsl/install) (Windows Subsystem for Linux) 安装 Conda 以及 REST 程序。
 
 具体的做法是，首先，创建一个新的 conda 环境（推荐）
 
