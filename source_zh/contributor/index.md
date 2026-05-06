@@ -2,6 +2,7 @@
 
 ```{toctree}
 :maxdepth: 1
+compile-guide
 ri
 grad-rhf
 grad-uhf
