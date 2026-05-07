@@ -26,7 +26,7 @@ $REST_HOME
 
 ## 一般编译流程
 
-1. **声明必要的环境变量**
+1. **开发环境准备，必要的环境变量声明**
 
     ```bash
     export REST_HOME="<specify by yourself>"
@@ -39,6 +39,13 @@ $REST_HOME
     对于 MacOS 系统，使用 `DYLD_LIBRARY_PATH`。
 
     `HDF5_DIR` 环境变量比较特殊。该变量是由 `hdf5-metno` 库引入的，并非 REST 本身引入。在一些包管理系统 (如 Ubuntu 的 apt 等) 下，开发者可能不需要指定该环境变量也能编译；但如果包管理系统不可用，就需要开发者手动设置。
+
+    REST 编译需要使用 Fortran 编译器。默认情况下会使用 gfortran；但如果有特殊情况，请设置环境变量 `REST_FORTRAN_COMPILER` 或 `FC` 来指定 Fortran 编译器。
+
+    除此之外，建议开发者安装比要的系统库：
+    - 对于 Linux 开发者，一般需要安装 gcc, gfortran, g++, libclang. 例如，在 ubuntu 系统中 `sudo apt-get install build-essential libclang-dev`；
+    - 对于 MacOS 开发者，一般需要安装 Xcode Command Line Tools (包含 clang 等)。可以通过 `xcode-select --install` 来安装。
+    - 请准备好 conda 环境。一般建议 Miniconda。
 
 2. **下载必要的代码**
 
@@ -58,7 +65,16 @@ $REST_HOME
 
     REST 所依赖的库一般都可以从主流的平台上下载 (conda, apt, yum, brew 等)。
 
-    conda 目前是最方便的库平台；它可以安装几乎所有 REST 的依赖：
+    conda 目前是最方便的库平台；它可以安装几乎所有 REST 的依赖。
+
+    一般建议开发者在一个新的虚拟环境 (名称可以是 rest-dev) 下安装依赖，以免与其他项目的依赖发生冲突。
+
+    ```bash
+    conda create -n rest-dev
+    conda activate rest-dev
+    ```
+
+    随后安装依赖：
 
     ```bash
     conda install                         \
@@ -66,7 +82,7 @@ $REST_HOME
        numpy scipy h5py                   \
        "libopenblas=*=*openmp*"           \
        libxc libcint                      \
-       openmpi gfortran                   \
+       openmpi gfortran libclang          \
        simple-dftd3 dftd4 geometric mokit \
        -c conda-forge                     \
        -c mokit                            
@@ -104,6 +120,23 @@ $REST_HOME
     cargo build -p rest
     ```
 
+    其中，`-p rest` 是为了只编译 rest 包；这也等同于
+
+    ```bash
+    cd $REST_HOME/rest
+    cargo build
+    ```
+
+    产生的可执行程序是 `$REST_HOME/target/debug/rest`。
+
+    请注意该编译产物是 debug 模式的，其性能是无法满足实际应用的。如果需要 release 模式的编译产物，请使用 `cargo build -p rest --release`，这会显著增加编译时间；release 编译产生的可执行程序是 `$REST_HOME/target/release/rest`。
+
+    如果想执行单元测试，以 `rest/src/tests/test_parse_xc.rs` 为例，可以通过下述命令实现：
+
+    ```bash
+    cargo test --test test_parse_xc
+    ```
+
 6. **确认 REST 可以运行**
 
     到 rest_regression 运行任意一个测试样例，确认 rest 是否能正常工作。
@@ -112,13 +145,14 @@ $REST_HOME
 
     ```bash
     cd $REST_HOME/rest_regression/bench_pool/NH3_X3LYP
-    $REST_HOME/target/debug/rest
+    $REST_HOME/target/debug/rest  # use binary built from debug mode
     ```
 
     如果想确认全部测试样例，可以运行下述代码：
 
     ```bash
-    cargo run -p rest_regression -- -c debug
+    cd $REST_HOME/rest_regression
+    cargo run -- -c debug
     ```
 
 ## Visual Studio Code 设置
@@ -139,6 +173,7 @@ $REST_HOME
             "REST_EXT_DIR": "<fill in value of $REST_EXT_DIR>",
             "CARGO_TARGET_DIR": "debug",
             "LD_LIBRARY_PATH": "<fill in value of $LD_LIBRARY_PATH>",
+            "PyO3_PYTHON": "<fill in value of your current python executable path>",
         },
         "rust-analyzer.runnables.extraEnv": {
             "REST_HOME": "<your $REST_HOME path>",
@@ -146,12 +181,16 @@ $REST_HOME
             "REST_EXT_DIR": "<fill in value of $REST_EXT_DIR>",
             "CARGO_TARGET_DIR": "debug",
             "LD_LIBRARY_PATH": "<fill in value of $LD_LIBRARY_PATH>",
+            "PyO3_PYTHON": "<fill in value of your current python executable path>",
         },
     }
     ```
 
     - `rust-analyzer.cargo.extraEnv` 与 `rust-analyzer.runnables.extraEnv` 的设置一般是一样的，前者是针对 rust-analyzer 插件的编译环境设置，后者是针对 vscode 运行环境设置。
-    - 建议 `CARGO_TARGET_DIR` 设置为 `debug` (至少要与 `target` 文件夹有所区分)。这会产生两倍的硬盘占用，但可以避免 vscode 与命令行之间的编译产物冲突。
+    - `HDF5_DIR` 与 `PyO3_PYTHON` 不是必须要设置的环境变量；但如果 rust-analyzer 或遇到编译困难，则需要设置。
+    - 建议 `CARGO_TARGET_DIR` 设置为 `debug` (至少要与 `target` 文件夹有所区分)。这会产生两倍的硬盘占用，但可以避免 vscode 与命令行之间的编译产物冲突[^1]。
+
+    [^1]: 由于各种可能的原因（特别是 Linux 情景下），VSCode 的编译环境会与 CLI 编译环境有些许差异。即使是非常小的差异，也可能会导致 cargo 认为需要重新编译一部分 dependency，从而 CLI 与 VSCode 共同使用同一个 target 目录很容易破坏增量编译（接近于重新编译），拖累一些开发时间。
 
 5. 到 `rest/tests` 下的任意一个测试文件，点击 `▸ Run Test` 按钮，确认 vscode 能否编译与运行测试。
 

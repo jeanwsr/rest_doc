@@ -106,23 +106,8 @@ docker build -t rest:latest -f ./Dockerfile.abini .
 
 用户可以从代码仓库中拉取 REST 程序源码，在确保 REST 程序依赖的外部库完整的前提条件下，使用 Rust 语言的包管理器 Cargo 编译 REST 源码，获得可执行文件。这样的好处在于可以最大程度的保证 REST 的计算性能，同时可以通过编译选项，实现功能化定制。目前，在团队 [Gitee 仓库](https://gitee.com/restgroup/rest_workspace) 下，提供了大致的程序编译流程，包括 Rust 编译器与包管理器 Cargo 的安装，REST 外部依赖的构建以及 REST 程序源码的获取与编译的完整流程，供有兴趣参与开发的研究者参考。
 
-### 结合 conda 依赖的源码编译
-
-* 下载 rest_workspace 源码到本地，如 `$HOME/rest_workspace`，并下载其中 rest 等项目的源码。
-* 通过系统安装 gcc, gfortran, g++, libclang. 例如，在 ubuntu 系统中 `sudo apt-get install build-essential libclang-dev`
-* 使用 conda 安装其余的依赖
-```
-conda create -n rest-build python=3.11 -c conda-forge
-conda activate rest-build
-conda install hdf5 libcint openblas[build=openmp*] libxc-c openmpi=4 geometric simple-dftd3 dftd4 mokit -c conda-forge -c mokit
-```
-* 设置环境变量 
-```
-export REST_HOME=$HOME/rest_workspace
-export REST_EXT_DIR=$HOME/rest_deps/lib
-export HDF5_DIR=$CONDA_PREFIX
-```
-复制动态库。`cp -d $CONDA_PREFIX/lib/*.so.* $REST_EXT_DIR`
-`cp -d ${CONDA_PREFIX}/lib/python${PY_VER}/site-packages/mokit/lib/librest2fch.so  $REST_EXT_DIR`
-* `OMPI_CC=gcc cargo build`
-* 设置 `LD_LIBRARY_PATH`
+可供参考的编译文档或脚本：
+- 结合 conda 依赖的源码编译：参考 [开发者安装指南](../contributor/compile-guide.md)。
+- Docker 编译流程：参考 [rest_docker](https://gitee.com/restgroup/rest_docker) 项目。
+- 从头编译流程：参考 [rest_workspace](https://gitee.com/restgroup/rest_workspace) 项目中的 README.rst 文件。
+- conda 发行版的构建流程：参考 [rest-feedstock](https://github.com/RESTGroup/rest-feedstock) 项目。
