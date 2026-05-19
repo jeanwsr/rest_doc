@@ -88,10 +88,10 @@ $$
 
 
 $$
-\begin{align}
+\begin{aligned}
 E_{\mu \nu} &= C_{\mu i} \varepsilon_i n_i C_{\nu i} \\
 \Delta_{t \mu} &\leftarrow 2 (\partial_t \mu | \nu) E_{\mu \nu}
-\end{align}
+\end{aligned}
 $$
 
 
@@ -112,7 +112,7 @@ $$
 
 | 变量名 | 变量意义 | 指标顺序 | 维度大小 | 其他说明 |
 |--|--|--|--|--|
-| `int1e_ipovlp` | $(\partial_t \mu | \nu)$ | $(\mu, \nu, t)$ | $(n_\mathrm{basis}, n_\mathrm{basis}, 3)$ | anti-sym |
+| `int1e_ipovlp` | $(\partial_t \mu \vert \nu)$ | $(\mu, \nu, t)$ | $(n_\mathrm{basis}, n_\mathrm{basis}, 3)$ | anti-sym |
 | `dme0` | $E_{\mu \nu}$ | $(\mu, \nu)$ | $(n_\mathrm{basis}, n_\mathrm{basis})$ | sym |
 | `dao_ovlp` | $\Delta_{t \mu}$ 贡献项 | $(\mu, t)$ | $(n_\mathrm{basis}, 3)$ |
 
@@ -131,21 +131,21 @@ $$
 其次，我们需要给出 $\partial_{A_t} h_{\mu \nu}$ 的具体计算过程。首先定义动能与势能算符的表示
 
 $$
-\begin{align}
+\begin{aligned}
 k_{\mu \nu} &= \langle \mu | \hat k | \nu \rangle = \langle \mu | - \frac{1}{2} \nabla^2 | \nu \rangle \\
 v_{\mu \nu} &= \langle \mu | \hat v | \nu \rangle = \langle \mu | \sum_A \frac{- Z_A}{|\boldsymbol{r} - \boldsymbol{A}|} | \nu \rangle \\
 h_{\mu \nu} &= k_{\mu \nu} + v_{\mu \nu}
-\end{align}
+\end{aligned}
 $$
 
 
 其导数则为
 
 $$
-\begin{align}
+\begin{aligned}
 \partial_{A_t} k_{\mu \nu} &= - \langle \partial_t \mu_{\in A} | \hat k | \nu \rangle - \langle \partial_t \mu | \hat k | \partial_t \nu_{\in A} \rangle \\
 \partial_{A_t} v_{\mu \nu} &= - \langle \partial_t \mu_{\in A} | \hat v | \nu \rangle - \langle \partial_t \mu | \hat v | \partial_t \nu_{\in A} \rangle + \langle \mu | \partial_t \frac{-Z_A}{|\boldsymbol{r}_{\rightarrow A}|} | \nu \rangle
-\end{align}
+\end{aligned}
 $$
 
 
@@ -163,11 +163,11 @@ $$
 因此，整理上述式子可得
 
 $$
-\begin{align}
+\begin{aligned}
 \texttt{h1}_{\mu \nu}^t &= - \langle \partial_t \mu | \hat k | \nu \rangle - \langle \partial_t \mu | \hat v | \nu \rangle \\
 \texttt{int1e\_iprinv}_{\mu \nu}^t &= \langle \partial_t \mu | \frac{1}{|\boldsymbol{r}_{\rightarrow A}|} | \nu \rangle \\
 \partial_{A_t} h_{\mu \nu} &= \texttt{h1}_{\mu_{\in A} \nu}^t + \texttt{h1}_{\mu \nu_{\in A}}^t - Z_A \texttt{int1e\_iprinv}_{\mu \nu}^t - Z_A \texttt{int1e\_iprinv}_{\nu \mu}^t
-\end{align}
+\end{aligned}
 $$
 
 
@@ -209,19 +209,19 @@ $$
 这种情况下，求和计算不一定要对完整的 $(\mu, \nu)$ 求和，而只对其上三角部分 $(\mu, \nu \geqslant \nu)$ 求和。为此，定义
 
 $$
-\begin{align}
+\begin{aligned}
 b_{t, \mathrm{tp}(\mu \nu)} &\bowtie b_{t, \mu \nu} \\
 c_{\mathrm{tp}(\mu \nu)} &\mathop{\tilde{\bowtie}} c_{\mu \nu}
-\end{align}
+\end{aligned}
 $$
 
 其中，$\mathrm{tp}(\mu \nu)$ 是一维指标，长度 $\frac{1}{2} n_\mathrm{basis} (n_\mathrm{basis} + 1)$。映射关系 $\bowtie$ 与 $\mathop{\tilde{\bowtie}}$ 分别指代的是
 
 $$
-\begin{align}
+\begin{aligned}
 \bowtie &: b_{t, \mathrm{tp}(\mu \nu)} = b_{t, \mu \nu} \\
 \mathop{\tilde{\bowtie}} &: c_{\mathrm{tp}(\mu \nu)} = (2 - \delta_{\mu \nu}) c_{\mu \nu}
-\end{align}
+\end{aligned}
 $$
 
 
