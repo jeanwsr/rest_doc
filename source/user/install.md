@@ -106,28 +106,13 @@ Users who already have REST Docker images can convert them to Singularity images
 
 Users can pull the REST source code from the repository and, provided all external dependencies are satisfied, compile REST using Rust's package manager Cargo to obtain the executable. This approach maximizes REST's computational performance and allows feature customization through compile options. The team's [Gitee repository](https://gitee.com/restgroup/rest_workspace) provides an overview of the compilation workflow, including installation of the Rust compiler and Cargo, building external dependencies, and obtaining and compiling REST source code, for researchers interested in contributing to development.
 
-### Building with Conda Dependencies
+Available build documentation and scripts for reference:
+- Building with conda dependencies: see the [Developer Installation Guide](../contributor/compile-guide.md).
+- Docker build workflow: see the [rest_docker](https://gitee.com/restgroup/rest_docker) project.
+- Build-from-scratch workflow: see the `README.rst` file in [rest_workspace](https://gitee.com/restgroup/rest_workspace).
+- Conda distribution build workflow: see the [rest-feedstock](https://github.com/RESTGroup/rest-feedstock) project.
 
-* Download the `rest_workspace` source to your local machine, e.g., `$HOME/rest_workspace`, and download the source code for `rest` and other subprojects.
-* Install `gcc`, `gfortran`, `g++`, and `libclang` via the system package manager. For example, on Ubuntu: `sudo apt-get install build-essential libclang-dev`
-* Use conda to install the remaining dependencies:
-  ```
-  conda create -n rest-build python=3.11 -c conda-forge
-  conda activate rest-build
-  conda install hdf5 libcint openblas[build=openmp*] libxc-c openmpi=4 geometric simple-dftd3 dftd4 mokit -c conda-forge -c mokit
-  ```
-* Set environment variables:
-  ```
-  export REST_HOME=$HOME/rest_workspace
-  export REST_EXT_DIR=$HOME/rest_deps/lib
-  export HDF5_DIR=$CONDA_PREFIX
-  ```
-  Copy shared libraries: `cp -d $CONDA_PREFIX/lib/*.so.* $REST_EXT_DIR`
-  `cp -d ${CONDA_PREFIX}/lib/python${PY_VER}/site-packages/mokit/lib/librest2fch.so  $REST_EXT_DIR`
-* `OMPI_CC=gcc cargo build`
-* Set `LD_LIBRARY_PATH`
-
-### Troubleshooting
+<!-- ### Troubleshooting
 
 #### Problem with libclang
 
@@ -141,4 +126,4 @@ spack install cmake@3.27%gcc@4.8.5
 spack install -j 4 llvm +clang ~lld ~lldb ~flang ~polly %gcc@13 ^cmake@3.27%gcc@4.8.5
 ```
 
-After that, use `spack load llvm@18.1.3` to load libclang, and `spack find -p llvm@18.1.3` to get the location. Set `LIBCLANG_PATH` before proceeding with the cargo build.
+After that, use `spack load llvm@18.1.3` to load libclang, and `spack find -p llvm@18.1.3` to get the location. Set `LIBCLANG_PATH` before proceeding with the cargo build. -->
