@@ -6,7 +6,7 @@ xc = "B3LYP"
 xc_parser = "parse_xc"
 ```
 
-以下是规则介绍。
+以下是规则介绍。整个输入字符串**大小写不敏感**。
 
 ## 一级结构
 
@@ -76,6 +76,9 @@ Error: functional X_PBE has illegal prefix for type C
 | | ComponenType| alias | param  |
 | --- | --- | --- | --- |
 | HF | HF | | |
+| SR_HF | RSHF | | 1 positional (`omega`) |
+| LR_HF | RSHF | | 1 positional (`omega`) |
+| RSH | RSHF | | 3 positional (`omega`, `alpha`, `beta`) |
 | MP2 | PT2 | | `os=, ss=` or 2 positional |
 | MP2_OS | PT2 | | 1 positional |
 | MP2_SS | PT2 | | 1 positional |
@@ -86,7 +89,7 @@ Error: functional X_PBE has illegal prefix for type C
 | DFTD4 | Disp | D4 | toml-param of dftd4-rs |
 | VV10 | Disp | | |
 
-注：VV10 只支持解析不支持计算。
+注：VV10 目前只支持解析，对应的非局域相关计算暂未实现。
 
 ### 参数
 每个 component 可以有参数，置于`()`内。形式只能是 positional 或 keyword 其中的一种（前者为`(0.3,0.4)`，后者为`(a=0.3,b=0.4)`）。
@@ -95,7 +98,36 @@ Error: functional X_PBE has illegal prefix for type C
 
 MP2, SCSRPA 等可以指定一些参数，具体规则见上一节的表格。
 
-D3,D4 也支持自定义参数，具体规则见 [dftd3-rs](https://github.com/RESTGroup/dftd3-rs#example-custom-parameters-by-toml)。此外，也支持如 `B3LYP-D3BJ`,`B3LYP-D4` 等简洁输入。当 `xc` 含有 `-D3BJ` 等后缀时，不能与 `empirical_dispersion` 共存。
+D3,D4 也支持自定义参数，具体规则见 [dftd3-rs](https://github.com/RESTGroup/dftd3-rs#example-custom-parameters-by-toml)。
+
+### Dispersion
+
+支持色散后缀的简洁输入。在泛函名称后附加后缀，会自动展开为对应的 Disp component：
+
+| 后缀 | 展开结果 |
+| --- | --- |
+| `-D3ZERO` | `D3(version=zero, xc=...)` |
+| `-D3BJ` | `D3(version=bj, xc=...)` |
+| `-D4` | `D4(version=bj, xc=...)` |
+| `-V` / `-VV10` | `VV10(xc=...)` |
+| `-RVV10` | `rVV10(xc=...)` |
+
+例如 `B3LYP-D3BJ` 等价于 `B3LYP + D3(version=bj, xc=b3lyp)`（然而这种等价并不总是成立，见以下的特殊情况）。
+当 `xc` 含有上述后缀时，不能与 `empirical_dispersion` 共存。
+
+对于某些特殊的色散泛函，还支持以下直接别名展开：
+
+| 名称 | 展开结果 |
+| --- | --- |
+| `CF22D` | `CF22D + D3(version=zero, xc=cf22d)` |
+| `WB97X-D3BJ` | `wb97x_v + D3(version=bj, xc=wb97x)` |
+| `WB97X-D3` | `wb97x_d3 + D3(version=zero, xc=wb97x)` |
+| `WB97X-V` | `wb97x_v + VV10(xc=wb97x_v)` |
+| `WB97M-D3BJ` | `wb97m_v + D3(version=bj, xc=wb97m)` |
+| `WB97M-V` | `wb97m_v + VV10(xc=wb97m_v)` |
+| `SCAN-VV10` | `SCAN,SCAN_VV10 + VV10(xc=scan_vv10)` |
+| `SCAN-RVV10` | `SCAN,SCAN_RVV10 + VV10(xc=scan_rvv10)` |
+| `REVSCAN-VV10` | `REVSCAN,REVSCAN_VV10 + VV10(xc=revscan_vv10)` |
 
 <!-- ## 杂化泛函
 目前已实现了对于显式定义`HF`的杂化泛函的解析，例如上面`".2*HF + 0.08*LDA + 0.72*B88, 0.81*LYP + 0.19*VWN3"`的例子。
@@ -160,8 +192,9 @@ pub struct DFAdef {
     pub xc_nscf: Option<Vec<DFAComponent>>,
     pub reference: Vec<String>,
     pub spin_channel: usize,
-    pub dfa_hybrid_scf: f64,
-    pub dfa_hybrid_nscf: Option<f64>,
+    pub dfa_hybrid_scf: f64,                    // SCF 步的 HFX 系数
+    pub dfa_rsh_scf: (Option<f64>, f64, f64),   // SCF 步的 RSH 参数 (omega, alpha, beta)
+    pub dfa_hybrid_nscf: Option<f64>,           // 最终能量步的 HFX 系数（仅两步泛函）
 }
 ```
 同时有 `xc_scf` 和 `xc_nscf` 时为两步泛函；一步泛函只有前者非None。
@@ -175,13 +208,14 @@ pub struct DFAComponent {
     pub func_full_name: String,
     pub id: usize,
     pub param_positional: Vec<f64>,
-    pub param_keyword: HashMap<String, f64>,
+    pub param_keyword: HashMap<String, Value>,   // Value 可以是 f64 或 String
     pub component_type: ComponentType,
     pub reference: Vec<String>,
 }
 
 pub enum ComponentType {
     HF,
+    RSHF,      // SR_HF, LR_HF, RSH
     PT2,
     RPA,
     SCSRPA,
