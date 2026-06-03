@@ -5,5 +5,5 @@
 ri
 grad-rhf
 grad-uhf
-parse_xc
+dft/index
 ```
