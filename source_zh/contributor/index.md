@@ -5,5 +5,5 @@
 compile-guide
 ri-jk/index
 ri-jk-grad/index
-parse_xc
+dft/index
 ```
