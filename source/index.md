@@ -8,9 +8,10 @@ html_theme.sidebar_secondary.remove: true
 ```{toctree}
 :hidden:
 
-quickstart
+ quickstart
 user/index
 contributor/index
+changelog
 About <about>
 ```
 
