@@ -11,6 +11,25 @@ python3 scripts/analyze_changes.py --from <旧版本> --to <新版本> --no-fetc
 
 脚本输出各子仓库的 git revision 和 `git log --oneline` 提交列表，可据此整理为更新日志条目。
 
+---
+
+## v2026.1.0 → v2026.1.0.1
+
+### rest
+
+- !147 less debug output for pcm
+- !145 Implement ExtField Grad API for rhf/rks/uhf/uks cases
+- !146 梯度修复：外电场 + 赝原子全场景解析力
+- IYZ: fix some force bugs for embeded systems
+- IYZ: to invole the contribution of ghost potential into the analytic gradient
+
+### rest_regression
+
+- !38 Revise files about pcm
+- !36 add skip option
+
+---
+
 ## v2025.02.7 → v2026.1.0
 
 ### rest

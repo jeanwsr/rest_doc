@@ -11,6 +11,25 @@ python3 scripts/analyze_changes.py --from <old-version> --to <new-version> --no-
 
 The script outputs git revisions and `git log --oneline` for each sub-repository, which can be used as the basis for curating changelog entries.
 
+---
+
+## v2026.1.0 → v2026.1.0.1
+
+### rest
+
+- !147 less debug output for pcm
+- !145 Implement ExtField Grad API for rhf/rks/uhf/uks cases
+- !146 Gradient fix: external field + ghost atom full-scenario analytic force
+- IYZ: fix some force bugs for embedded systems
+- IYZ: invoke contribution of ghost potential into analytic gradient
+
+### rest_regression
+
+- !38 Revise files about pcm
+- !36 add skip option
+
+---
+
 ## v2025.02.7 → v2026.1.0
 
 ### rest
