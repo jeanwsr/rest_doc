@@ -22,7 +22,6 @@ $$
 | `solvent_ri` | bool | `true` | 是否使用 RI 加速溶剂化积分计算 |
 | `solv_chunk` | usize | `8` | 格点并行计算的批处理大小 |
 
-开启溶剂化计算只需设置 `solvent_model` 为非空字符串，程序会自动启用溶剂化功能，无需额外声明 `solvent_enabled = true`。
 
 ### 常见溶剂的介电常数
 

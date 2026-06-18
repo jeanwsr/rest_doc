@@ -38,7 +38,7 @@ REST 程序支持在 Windows 系统上运行，有以下两种方式：
 
 2. **原生 Windows**：REST 的 Conda 包也提供了 Windows 原生版本，用户可在 Windows 命令行中直接使用 `conda install` 安装。但需要注意，Windows 原生版本的稳定性可能不如 Linux 版本。
 
-对于需要自动化安装的用户，团队在 [rest_workspace](https://gitee.com/restgroup/rest_workspace) 项目的 `install_scripts` 目录下提供了 Windows 安装脚本 (`install-rest.bat` 和 `install-rest-wsl.bat`)，分别用于原生 Windows 安装和 WSL 环境下的安装。
+对于需要自动化安装的用户，团队在 [ringo](https://gitee.com/restgroup/ringo) 项目下提供了 Windows 安装脚本 (`install-rest.bat`)，可支持原生 Windows 安装和 WSL 环境下的安装。
 
 ## 使用 Docker 或 Singularity 镜像
 
