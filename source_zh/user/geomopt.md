@@ -158,7 +158,7 @@ geomeTRIC 引擎的参数通过输入卡中的 `[ctrl.geometric_pyo3]` 子区块
 
 ## L-BFGS 优化器
 
-L-BFGS 引擎是 REST 内置的轻量级优化器，基于 Rust 的 `liblbfgs` 库实现。它始终使用数值梯度，且不支持约束优化（固定原子）和过渡态搜索。对于需要这些功能的场景，请使用缺省的 geomeTRIC 引擎。
+L-BFGS 引擎是 REST 内置的轻量级优化器，基于 Rust 的 `liblbfgs` 库实现。该引擎不支持约束优化（固定原子）和过渡态搜索。对于需要这些功能的场景，请使用缺省的 geomeTRIC 引擎。
 
 相关关键词：
 
