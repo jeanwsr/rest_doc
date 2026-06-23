@@ -13,23 +13,6 @@ python3 scripts/analyze_changes.py --from <旧版本> --to <新版本> --no-fetc
 
 ---
 
-## v2026.1.0 → v2026.1.0.1
-
-### rest
-
-- !147 less debug output for pcm
-- !145 Implement ExtField Grad API for rhf/rks/uhf/uks cases
-- !146 梯度修复：外电场 + 赝原子全场景解析力
-- IYZ: fix some force bugs for embeded systems
-- IYZ: to invole the contribution of ghost potential into the analytic gradient
-
-### rest_regression
-
-- !38 Revise files about pcm
-- !36 add skip option
-
----
-
 ## v2026.1.0.1 → v2026.1.0.2
 
 ### rest
@@ -44,6 +27,23 @@ python3 scripts/analyze_changes.py --from <旧版本> --to <新版本> --no-fetc
 - !40 modified H2O_dSCF_B3LYP and C4H4_mix_yamaguchi
 - !39 redirect stderr, add durations
 - !37 add regression tests for RHF(HI) and UKS(O2) external field gradients
+
+---
+
+## v2026.1.0 → v2026.1.0.1
+
+### rest
+
+- !147 less debug output for pcm
+- !145 Implement ExtField Grad API for rhf/rks/uhf/uks cases
+- !146 梯度修复：外电场 + 赝原子全场景解析力
+- IYZ: fix some force bugs for embeded systems
+- IYZ: to invole the contribution of ghost potential into the analytic gradient
+
+### rest_regression
+
+- !38 Revise files about pcm
+- !36 add skip option
 
 ---
 

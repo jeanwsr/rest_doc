@@ -13,23 +13,6 @@ The script outputs git revisions and `git log --oneline` for each sub-repository
 
 ---
 
-## v2026.1.0 → v2026.1.0.1
-
-### rest
-
-- !147 less debug output for pcm
-- !145 Implement ExtField Grad API for rhf/rks/uhf/uks cases
-- !146 Gradient fix: external field + ghost atom full-scenario analytic force
-- IYZ: fix some force bugs for embedded systems
-- IYZ: invoke contribution of ghost potential into analytic gradient
-
-### rest_regression
-
-- !38 Revise files about pcm
-- !36 add skip option
-
----
-
 ## v2026.1.0.1 → v2026.1.0.2
 
 ### rest
@@ -44,6 +27,23 @@ The script outputs git revisions and `git log --oneline` for each sub-repository
 - !40 modified H2O_dSCF_B3LYP and C4H4_mix_yamaguchi
 - !39 redirect stderr, add durations
 - !37 add regression tests for RHF(HI) and UKS(O2) external field gradients
+
+---
+
+## v2026.1.0 → v2026.1.0.1
+
+### rest
+
+- !147 less debug output for pcm
+- !145 Implement ExtField Grad API for rhf/rks/uhf/uks cases
+- !146 Gradient fix: external field + ghost atom full-scenario analytic force
+- IYZ: fix some force bugs for embedded systems
+- IYZ: invoke contribution of ghost potential into analytic gradient
+
+### rest_regression
+
+- !38 Revise files about pcm
+- !36 add skip option
 
 ---
 
