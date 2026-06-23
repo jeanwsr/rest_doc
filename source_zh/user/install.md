@@ -4,7 +4,7 @@
 
 ## 通过 Conda 安装
 
-REST 程序已成功发布在 Anaconda，允许用户通过 [Conda](https://docs.conda.org.cn/projects/conda/en/stable/user-guide/getting-started.html) 直接安装 REST 可执行程序（二进制文件）。目前，我们支持 Linux x86-64 及 MacOS Arm64 系统下的 Conda 安装。对于 Windows 用户，须使用 [WSL](https://learn.microsoft.com/zh-cn/windows/wsl/install) (Windows Subsystem for Linux) 安装 Conda 以及 REST 程序。
+REST 程序已成功发布在 Anaconda，允许用户通过 [Conda](https://docs.conda.org.cn/projects/conda/en/stable/user-guide/getting-started.html) 直接安装 REST 可执行程序（二进制文件）。目前，我们支持 Linux x86-64 及 MacOS Arm64 系统下的 Conda 安装。对于 Windows 用户，推荐使用 [WSL2](https://learn.microsoft.com/zh-cn/windows/wsl/install) (Windows Subsystem for Linux) 安装 Conda 以及 REST 程序，以获得最稳定的使用体验。REST 也支持在 Windows 原生环境下通过 Conda 安装，但稳定性可能不如 Linux 版本。
 
 具体的做法是，首先，创建一个新的 conda 环境（推荐）
 
@@ -29,6 +29,16 @@ conda install rest -c restgroup -c mokit -c conda-forge
 which rest 
 rest -h
 ```
+
+### Windows 用户说明
+
+REST 程序支持在 Windows 系统上运行，有以下两种方式：
+
+1. **WSL2（推荐）**：通过 WSL2 安装 Linux 环境后，按照上述 Linux 的 Conda 安装方式进行安装。WSL2 方式最为稳定，功能完整，是官方推荐的 Windows 使用方案。
+
+2. **原生 Windows**：REST 的 Conda 包也提供了 Windows 原生版本，用户可在 Windows 命令行中直接使用 `conda install` 安装。但需要注意，Windows 原生版本的稳定性可能不如 Linux 版本。
+
+对于需要自动化安装的用户，团队在 [ringo](https://gitee.com/restgroup/ringo) 项目下提供了 Windows 安装脚本 (`install-rest.bat`)，可支持原生 Windows 安装和 WSL 环境下的安装。
 
 ## 使用 Docker 或 Singularity 镜像
 
@@ -111,3 +121,9 @@ docker build -t rest:latest -f ./Dockerfile.abini .
 - Docker 编译流程：参考 [rest_docker](https://gitee.com/restgroup/rest_docker) 项目。
 - 从头编译流程：参考 [rest_workspace](https://gitee.com/restgroup/rest_workspace) 项目中的 README.rst 文件。
 - conda 发行版的构建流程：参考 [rest-feedstock](https://github.com/RESTGroup/rest-feedstock) 项目。
+
+```{note}
+REST 程序的 MPI 并行功能在编译时可选。如果编译环境不支持 MPI（如 Windows 原生环境），可通过以下方式禁用 MPI 编译：
+`cargo build --no-default-features -F dftd3,dftd4,geometric-pyo3`
+禁用 MPI 后，程序仍可正常进行所有量子化学计算，但仅支持线程级并行（Rayon），不支持跨节点 MPI 并行。
+```

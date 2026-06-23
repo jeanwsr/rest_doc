@@ -6,6 +6,7 @@ install
 input
 scf
 dft
+solvent
 post_process
 gw
 geomopt
