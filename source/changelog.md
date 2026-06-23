@@ -30,6 +30,23 @@ The script outputs git revisions and `git log --oneline` for each sub-repository
 
 ---
 
+## v2026.1.0.1 → v2026.1.0.2
+
+### rest
+
+- !151 Fix bugs for mGGA sparse grid, implement parallel grid iterator for KS
+- !150 update and reorganize README.md
+- !101 save and load basis in chkfile, basis projection
+- !148 fix a bug in PT2
+
+### rest_regression
+
+- !40 modified H2O_dSCF_B3LYP and C4H4_mix_yamaguchi
+- !39 redirect stderr, add durations
+- !37 add regression tests for RHF(HI) and UKS(O2) external field gradients
+
+---
+
 ## v2025.02.7 → v2026.1.0
 
 ### rest
