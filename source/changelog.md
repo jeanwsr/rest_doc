@@ -20,8 +20,6 @@ The script outputs git revisions and `git log --oneline` for each sub-repository
 - !160 fix some bugs in ROHF initial guess
 - !159 fix a bug in RO-fchk
 - !161 fix a bug in save_hamiltonian
-- fix: add dimension check when reading chkfile
-- fix a bug in chkfile in ROHF case
 
 ---
 

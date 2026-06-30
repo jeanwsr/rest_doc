@@ -20,8 +20,6 @@ python3 scripts/analyze_changes.py --from <旧版本> --to <新版本> --no-fetc
 - !160 fix some bugs in ROHF initial guess
 - !159 fix a bug in RO-fchk
 - !161 fix a bug in save_hamiltonian
-- fix: add dimension check when reading chkfile
-- fix a bug in chkfile in ROHF case
 
 ---
 
