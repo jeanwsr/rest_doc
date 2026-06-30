@@ -13,6 +13,30 @@ python3 scripts/analyze_changes.py --from <旧版本> --to <新版本> --no-fetc
 
 ---
 
+## v2026.1.0.3 → v2026.1.0.4
+
+### rest
+
+- !160 fix some bugs in ROHF initial guess
+- !159 fix a bug in RO-fchk
+- !161 fix a bug in save_hamiltonian
+- fix: add dimension check when reading chkfile
+- fix a bug in chkfile in ROHF case
+
+---
+
+## v2026.1.0.2 → v2026.1.0.3
+
+### rest
+
+- !158 fix for reading chkfile from fch2rest
+- !157 fix a bug in saving ROHF fchk file
+- !156 Feat: support for spin-free X2C method
+- !155 read cwd for xc json
+- !153 Support using solvent name; Support SMD and grad
+
+---
+
 ## v2026.1.0.1 → v2026.1.0.2
 
 ### rest
