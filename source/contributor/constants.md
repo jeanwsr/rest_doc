@@ -109,11 +109,9 @@ To keep the codebase consistent, please follow these conventions:
     let dist_bohr = dist_ang / crate::constants::BOHR;
     ```
 
-2. If a file already has `use crate::constants::{...};`, **merge the new constant into the existing `use` statement** rather than adding a new line.
+2. **Do not hardcode physical constant values** in the code (such as `0.52917721092`, `27.2114`, `1822.8885`, etc.). Always reference them from the `constants` module.
 
-3. **Do not hardcode physical constant values** in the code (such as `0.52917721092`, `27.2114`, `1822.8885`, etc.). Always reference them from the `constants` module.
-
-4. If a required constant does not yet exist, add it to `src/constants/mod.rs` with a source annotation (e.g. the CODATA year and the corresponding NIST value).
+3. If a required constant does not yet exist, add it to `src/constants/mod.rs` with a source annotation (e.g. the CODATA year and the corresponding NIST value).
 
 ## Sources and Updates
 
