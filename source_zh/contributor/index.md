@@ -5,6 +5,7 @@
 compile-guide
 ri-jk/index
 ri-jk-grad/index
+tddft
 dft/index
 constants
 ```

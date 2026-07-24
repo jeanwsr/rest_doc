@@ -7,6 +7,7 @@ input
 scf
 dft
 solvent
+tddft
 post_process
 gw
 geomopt
