@@ -21,7 +21,6 @@
 |---|---|---|---|
 | EDIIS/ADIIS mixer 文档 | #131 | 中 | `scf.md` 中 mixer 部分仅有 direct/linear/diis/ddiis；EDIIS 已写入 PR !150 README，待 !150 合并后同步至 `scf.md` |
 | 外电场及解析梯度 | #145, #146 | 中 | `ext_field_dipole` 关键词未在用户文档中说明（仅在 README `[geom]` 区块），且梯度支持为新功能 |
-| 118 元素 + IUPAC 2021 原子量 | #133 | 低 | 可在 `about.md` 或版本更新记录中简要提及 |
 | VXC 格点优化关键词 | #127 | 低 | `vxc_screen_threshold`、`ao_cutoff`、`non0tab_blksize`、`drop_dense_ao`；已在 PR !150 README 中，属高级关键词 |
 | `xc_parser` / `parse_xc` | PR !150 | 低 | `dft.md` 仅简要提及，待 !150 合并后完善 |
 | `use_dm_only` 关键词 | PR !150 | 低 | 已在 PR !150 README 中，属高级关键词 |
