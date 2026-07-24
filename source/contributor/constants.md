@@ -14,7 +14,7 @@ Centralizing constants serves to:
 
 | Submodule | File | Contents |
 |---|---|---|
-| `mod` (root) | `src/constants/mod.rs` | Physical and mathematical constants, numerical thresholds, scale constants, libcint index constants |
+| `mod` (root) | `src/constants/mod.rs` | Physical and mathematical constants, unit conversion constants, numerical thresholds, scale constants, libcint index constants |
 | `element` | `src/constants/element.rs` | Element names, atomic masses and charges, electron configurations, atomic radii, shell information |
 | `vsap` | `src/constants/vsap.rs` | Numerical potential tables for the VSAP (superposition of atomic potentials) initial guess |
 | `c2s` | `src/constants/c2s.rs` | Cartesian-to-spherical basis transformation matrices |
@@ -30,9 +30,9 @@ The physical constants are defined in `src/constants/mod.rs`, each with a source
 | Constant | Value | Meaning | Source |
 |---|---|---|---|
 | `EV` | 27.2113845 | Hartree → eV | CODATA 2002 |
-| `HARTREE2KCAL` | 627.509451 | Hartree → kcal/mol | CODATA 2002 |
-| `HARTREE2WAVENUMBER` | 219474.63 | Hartree → cm⁻¹ | CODATA |
 | `FQ` | 1822.8884861920776 | Ratio of atomic mass unit u to electron mass mₑ (= 1 / electron mass in u) | CODATA 2014 |
+| `E` | `std::f64::consts::E` | Euler's number e | mathematical constant |
+| `PI` | `std::f64::consts::PI` | π | mathematical constant |
 | `LIGHT_SPEED` | 137.03599967994 | Inverse fine-structure constant α⁻¹ (speed of light in atomic units) | CODATA 2006 |
 | `BOHR` | 0.52917721092 | Bohr radius (in Å), used for Å↔Bohr conversion | CODATA 2010 |
 | `BOHR_SI` | `BOHR * 1e-10` | Bohr radius (in m) | derived |
@@ -45,13 +45,28 @@ The physical constants are defined in `src/constants/mod.rs`, each with a source
 | `R_GAS` | `BOLTZMANN * AVOGADRO` | Ideal gas constant (J/(mol·K)) | derived |
 | `E_CHARGE` | 1.6021766208e-19 | Elementary charge (C) | CODATA 2014 |
 | `DEBYE` | 3.335641e-30 | 1 debye in C·m | defined via the speed of light |
-| `AU2DEBYE` | `E_CHARGE * BOHR*1e-10 / DEBYE` | Atomic-unit dipole → debye (≈2.541746) | derived |
-| `E` | `std::f64::consts::E` | Euler's number e | mathematical constant |
-| `PI` | `std::f64::consts::PI` | π | mathematical constant |
 
 ```{note}
-For historical reasons, the constants above are taken from several different CODATA releases, most of them (`G_ELECTRON`, `E_MASS`, `AVOGADRO`, `PLANCK`, `E_CHARGE`) from CODATA 2014. If you wish to unify them to a single release, please carefully assess the impact on regression test baselines.
+For historical reasons, the constants above are taken from several different CODATA releases, most of them (`G_ELECTRON`, `E_MASS`, `AVOGADRO`, `PLANCK`, `E_CHARGE`) from CODATA 2014. Newer constants (`HARTREE2J`, `HARTREE2WAVENUMBERS`, `AMU2KG`, `SPEED_OF_LIGHT`) use CODATA 2022. If you wish to unify them to a single release, please carefully assess the impact on regression test baselines.
 ```
+
+## Unit Conversion Constants
+
+These constants handle conversions between different unit systems. They are also defined in `src/constants/mod.rs`, grouped under the `unit conversion` comment block.
+
+| Constant | Value | Meaning | Source |
+|---|---|---|---|
+| `HARTREE2J` | 4.359744722206e-18 | Hartree → joule | CODATA 2022 |
+| `HARTREE2KJMOL` | `HARTREE2J * AVOGADRO / 1000.0` | Hartree → kJ/mol (≈2625.5) | derived |
+| `HARTREE2KCALMOL` | `HARTREE2KJMOL / CALORIE2J` | Hartree → kcal/mol | derived |
+| `HARTREE2KCAL` | 627.5094841703362 | Hartree → kcal/mol (= HARTREE2KCALMOL) | derived |
+| `HARTREE2WAVENUMBER` | 219474.63 | Hartree → cm⁻¹ | CODATA |
+| `HARTREE2WAVENUMBERS` | 219474.63136314 | Hartree → cm⁻¹ (higher precision) | CODATA 2022 |
+| `CALORIE2J` | 4.184 | calorie → joule | Wikipedia |
+| `AMU2KG` | 1.66053906892e-27 | amu → kg | CODATA 2022 |
+| `SPEED_OF_LIGHT` | 299792458.0 | Speed of light (m/s) | CODATA 2022 |
+| `BOHR2ANG` | `BOHR` | Bohr → Å (alias) | alias |
+| `AU2DEBYE` | `E_CHARGE * BOHR*1e-10 / DEBYE` | Atomic-unit dipole → debye (≈2.541746) | derived |
 
 ## Numerical Thresholds and Scale Constants
 

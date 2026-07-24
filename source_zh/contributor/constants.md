@@ -14,7 +14,7 @@
 
 | 子模块 | 文件 | 内容 |
 |---|---|---|
-| `mod`（根） | `src/constants/mod.rs` | 物理与数学常量、数值阈值、规模常量、libcint 索引常量 |
+| `mod`（根） | `src/constants/mod.rs` | 物理与数学常量、单位换算常量、数值阈值、规模常量、libcint 索引常量 |
 | `element` | `src/constants/element.rs` | 元素名、原子质量与电荷、电子组态、原子半径、壳层信息 |
 | `vsap` | `src/constants/vsap.rs` | VSAP（叠加原子势）初猜所用的数值势能表 |
 | `c2s` | `src/constants/c2s.rs` | 笛卡尔基到球谐基的转换矩阵 |
@@ -30,9 +30,9 @@
 | 常量 | 数值 | 含义 | 来源 |
 |---|---|---|---|
 | `EV` | 27.2113845 | Hartree → eV | CODATA 2002 |
-| `HARTREE2KCAL` | 627.509451 | Hartree → kcal/mol | CODATA 2002 |
-| `HARTREE2WAVENUMBER` | 219474.63 | Hartree → cm⁻¹ | CODATA |
 | `FQ` | 1822.8884861920776 | 原子质量单位 u 与电子质量 mₑ 之比（= 1 / electron mass in u） | CODATA 2014 |
+| `E` | `std::f64::consts::E` | 自然常数 e | 数学常量 |
+| `PI` | `std::f64::consts::PI` | 圆周率 π | 数学常量 |
 | `LIGHT_SPEED` | 137.03599967994 | 精细结构常数的倒数 α⁻¹（原子单位下的光速） | CODATA 2006 |
 | `BOHR` | 0.52917721092 | 玻尔半径（单位 Å），用于 Å↔Bohr 转换 | CODATA 2010 |
 | `BOHR_SI` | `BOHR * 1e-10` | 玻尔半径（单位 m） | 派生 |
@@ -45,13 +45,28 @@
 | `R_GAS` | `BOLTZMANN * AVOGADRO` | 理想气体常数（J/(mol·K)） | 派生 |
 | `E_CHARGE` | 1.6021766208e-19 | 元电荷（C） | CODATA 2014 |
 | `DEBYE` | 3.335641e-30 | 1 德拜对应的 C·m | 由光速定义 |
-| `AU2DEBYE` | `E_CHARGE * BOHR*1e-10 / DEBYE` | 原子单位偶极 → 德拜（≈2.541746） | 派生 |
-| `E` | `std::f64::consts::E` | 自然常数 e | 数学常量 |
-| `PI` | `std::f64::consts::PI` | 圆周率 π | 数学常量 |
 
 ```{note}
-由于历史原因，上述常量取自多个不同的 CODATA 版本，其中大多数（`G_ELECTRON`、`E_MASS`、`AVOGADRO`、`PLANCK`、`E_CHARGE`）为 CODATA 2014。若需要统一到单一版本，请谨慎评估对回归测试基线的影响。
+由于历史原因，上述常量取自多个不同的 CODATA 版本，其中大多数（`G_ELECTRON`、`E_MASS`、`AVOGADRO`、`PLANCK`、`E_CHARGE`）为 CODATA 2014。较新的常量（`HARTREE2J`、`HARTREE2WAVENUMBERS`、`AMU2KG`、`SPEED_OF_LIGHT`）采用 CODATA 2022。若需要统一到单一版本，请谨慎评估对回归测试基线的影响。
 ```
+
+## 单位换算常量
+
+以下常量用于不同单位制之间的转换，同样定义于 `src/constants/mod.rs`，集中在 `unit conversion` 注释分隔块内。
+
+| 常量 | 数值 | 含义 | 来源 |
+|---|---|---|---|
+| `HARTREE2J` | 4.359744722206e-18 | Hartree → joule | CODATA 2022 |
+| `HARTREE2KJMOL` | `HARTREE2J * AVOGADRO / 1000.0` | Hartree → kJ/mol（≈2625.5） | 派生 |
+| `HARTREE2KCALMOL` | `HARTREE2KJMOL / CALORIE2J` | Hartree → kcal/mol | 派生 |
+| `HARTREE2KCAL` | 627.5094841703362 | Hartree → kcal/mol（= HARTREE2KCALMOL） | 派生 |
+| `HARTREE2WAVENUMBER` | 219474.63 | Hartree → cm⁻¹ | CODATA |
+| `HARTREE2WAVENUMBERS` | 219474.63136314 | Hartree → cm⁻¹（更精确） | CODATA 2022 |
+| `CALORIE2J` | 4.184 | calorie → joule | Wikipedia |
+| `AMU2KG` | 1.66053906892e-27 | amu → kg | CODATA 2022 |
+| `SPEED_OF_LIGHT` | 299792458.0 | 光速（m/s） | CODATA 2022 |
+| `BOHR2ANG` | `BOHR` | Bohr → Å（别名） | 别名 |
+| `AU2DEBYE` | `E_CHARGE * BOHR*1e-10 / DEBYE` | 原子单位偶极 → 德拜（≈2.541746） | 派生 |
 
 ## 数值阈值与规模常量
 
