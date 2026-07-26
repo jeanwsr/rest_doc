@@ -3,6 +3,7 @@
 ```{toctree}
 :maxdepth: 1
 compile-guide
+logger
 ri-jk/index
 ri-jk-grad/index
 dft/index
