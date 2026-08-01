@@ -13,6 +13,71 @@ python3 scripts/analyze_changes.py --from <旧版本> --to <新版本> --no-fetc
 
 ---
 
+## v2026.1.0.7 → v2026.1.0.8
+
+### rest (ded45015..3b2af4ff)
+
+- !191 IYZ: fix a bug about the memory optimization about DFT grids
+- !190 IYZ: expose a new key "frac" to geometric_pyo3
+- !189 fix fch for frac occ
+- !188 整理 lib_rint R2 observables 与回归测试，新增 Hirshfeld 电荷分析
+- !187 bug: fix sanity check for basisproj
+- !186 IYZ: free the grids before PT2 loop
+- !185 remove dependency statrs
+- !184 IYZ: fix a bug for streaming pt2
+- !182 absorb check_norm into scf_io
+- !181 IYZ: propose a new pt2 algorithm to reduce the memory requirement
+- !180 Fix: 几何结构优化前显式释放内存
+- !179 fix occupation in r2u (RHF/ROKS→UKS initial guess)
+- !177 Bug Fix：修复 scf_io trait import 的问题
+- !176 unify all phys cons
+- !175 use log in ctrl_io and scf
+- !174 Add analytic_hessian option for geomeTRIC to use REST analytical Hessian
+- !173 IYZ: fix a bug for ediis
+- !172 Bug Fix: ri-direct 的 vk 计算在 ROHF 下的问题
+- !171 Fixed problem that leads to failure in cargo test
+- !170 IYZ: Add molecular symmetry detection functionality.
+- !169 add new scf conv criteria, like grad wrt dm
+- !168 fix a bug in dSCF (when using guessfile)
+- !154 杂化泛函解析 Hessian 备用模块 / 解析梯度模块 analdrv
+
+### rest_regression
+
+- !45 add test for basisproj and parsexc
+- !44 Bug Fix (regression): ri-direct 的 vk 计算在 ROHF 下的问题
+- !43 clean basis file
+- !42 Added Hessian/Frequencies regression tests, Modified TDDFT regression tasks and Added automated regression tasks for TRIC Optimization
+
+---
+
+## v2026.1.0.6 → v2026.1.0.7
+
+### rest (09ff1610..ded45015)
+
+- !167 IYZ: evaluate thermo properties
+- !166 Updated README.md for GW,BSE,TDDFT and Hessian
+
+---
+
+## v2026.1.0.5 → v2026.1.0.6
+
+### rest (a9051c01..09ff1610)
+
+- !165 Changed TDDFT Output Format, and Solved GW Unnecessary Output File Problem
+- !164 fix cross-platform issue in hessian
+
+---
+
+## v2026.1.0.4 → v2026.1.0.5
+
+### rest (d5227617..a9051c01)
+
+- !163 Fixed Bug in Hybrid Functional Hessian
+- !162 RHF and RKS Analytic Hessian and Frequencies are Ready
+- fix libc in hessian
+
+---
+
 ## v2026.1.0.3 → v2026.1.0.4
 
 ### rest

@@ -13,6 +13,71 @@ The script outputs git revisions and `git log --oneline` for each sub-repository
 
 ---
 
+## v2026.1.0.7 → v2026.1.0.8
+
+### rest (ded45015..3b2af4ff)
+
+- !191 IYZ: fix a bug in the DFT grids memory optimization
+- !190 IYZ: expose a new key `frac` to `geometric_pyo3`
+- !189 Fix fchk for fractional occupation
+- !188 Organize lib_rint R2 observables and regression tests; add Hirshfeld charge analysis
+- !187 Bug: fix sanity check for basis projection
+- !186 IYZ: free grids before the PT2 loop
+- !185 Remove `statrs` dependency
+- !184 IYZ: fix a bug in streaming PT2
+- !182 Absorb `check_norm` into `scf_io`
+- !181 IYZ: propose a new PT2 algorithm to reduce memory usage
+- !180 Fix: explicitly release memory before geometry optimization
+- !179 Fix occupation in r2u (RHF/ROKS → UKS initial guess)
+- !177 Bug Fix: fix `scf_io` trait import issue
+- !176 Unify all physical constants
+- !175 Use logging in `ctrl_io` and `scf`
+- !174 Add `analytic_hessian` option for geomeTRIC to use REST's analytical Hessian
+- !173 IYZ: fix a bug in EDIIS
+- !172 Bug Fix: ri-direct VK calculation under ROHF
+- !171 Fix issue that caused `cargo test` to fail
+- !170 IYZ: add molecular symmetry detection functionality
+- !169 Add new SCF convergence criteria (e.g. gradient w.r.t. density matrix)
+- !168 Fix a bug in dSCF (when using `guessfile`)
+- !154 Hybrid functional analytical Hessian alternate module / analytical gradient module `analdrv`
+
+### rest_regression
+
+- !45 Add test for `basisproj` and `parsexc`
+- !44 Bug Fix (regression): ri-direct VK calculation under ROHF
+- !43 Clean basis file
+- !42 Add Hessian/Frequencies regression tests; modify TDDFT regression tasks; add automated regression tasks for TRIC optimization
+
+---
+
+## v2026.1.0.6 → v2026.1.0.7
+
+### rest (09ff1610..ded45015)
+
+- !167 IYZ: evaluate thermo properties
+- !166 Updated README.md for GW, BSE, TDDFT and Hessian
+
+---
+
+## v2026.1.0.5 → v2026.1.0.6
+
+### rest (a9051c01..09ff1610)
+
+- !165 Changed TDDFT output format; solved GW unnecessary output file issue
+- !164 Fix cross-platform issue in Hessian
+
+---
+
+## v2026.1.0.4 → v2026.1.0.5
+
+### rest (d5227617..a9051c01)
+
+- !163 Fixed bug in hybrid functional Hessian
+- !162 RHF and RKS analytic Hessian and frequencies are ready
+- Fix libc usage in Hessian
+
+---
+
 ## v2026.1.0.3 → v2026.1.0.4
 
 ### rest
