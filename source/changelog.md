@@ -6,10 +6,12 @@ The `scripts/analyze_changes.py` script in the rest-feedstock project generates 
 
 ```bash
 cd rest-feedstock
-python3 scripts/analyze_changes.py --from <old-version> --to <new-version> --no-fetch
+python3 scripts/analyze_changes.py --auto --no-fetch
 ```
 
-The script outputs git revisions and `git log --oneline` for each sub-repository, which can be used as the basis for curating changelog entries.
+The script outputs git revisions and `git log --oneline` for each sub-repository, which can be used as the basis for curating changelog entries. `--auto` emits the transitions between versions segment by segment; alternatively, `--from <old-version> --to <new-version>` queries a specific version range (note: this mode outputs the full history, since the feedstock only records version points at recipe updates).
+
+Each version segment's `### rest` header carries the short commit-hash range of the rest repository at that segment's endpoints, e.g. `### rest (ded45015..3b2af4ff)`.
 
 ---
 

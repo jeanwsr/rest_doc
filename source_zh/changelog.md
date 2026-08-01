@@ -6,10 +6,12 @@
 
 ```bash
 cd rest-feedstock
-python3 scripts/analyze_changes.py --from <旧版本> --to <新版本> --no-fetch
+python3 scripts/analyze_changes.py --auto --no-fetch
 ```
 
-脚本输出各子仓库的 git revision 和 `git log --oneline` 提交列表，可据此整理为更新日志条目。
+脚本输出各子仓库的 git revision 和 `git log --oneline` 提交列表，可据此整理为更新日志条目。`--auto` 会按版本段（segment）逐段输出各版本之间的变迁；也可用 `--from <旧版本> --to <新版本>` 查询指定版本区间（注意：该模式输出的是完整历史，feedstock 仅在 recipe 更新时记录版本点）。
+
+每个版本段的 `### rest` 标题附带该段端点对应的 rest 仓库 commit 短哈希范围，如 `### rest (ded45015..3b2af4ff)`。
 
 ---
 
