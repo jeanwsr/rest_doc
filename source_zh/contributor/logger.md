@@ -83,6 +83,8 @@ log::set_max_level(cur_log_level);
 - `ctrl_io/path_util.rs` — `warn!`、`debug!`
 - `scf_io/mod.rs` — `info!`、`debug!`、`trace!`、`warn!`
 - `scf_io/scfrecord.rs` — `debug!`
+- `solvers/krylov.rs` — `info!`、`debug!`、`trace!`、`warn!`
+- `solvers/davidson.rs` — `info!`、`debug!`、`trace!`、`warn!`
 - `ri_jk/pure_direct.rs` — `warn!`
 - `ri_jk/pure_incore.rs` — `warn!`
 - `initial_guess/mod.rs` — 运行时日志等级调整
