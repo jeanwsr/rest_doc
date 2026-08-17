@@ -10,7 +10,7 @@ REST（Rust-based Electronic Structure Toolkit）是基于革命性 Rust 语言�
 ```{toctree}
 :hidden:
 
- quickstart
+quickstart
 user/index
 contributor/index
 changelog
