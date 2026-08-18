@@ -7,5 +7,5 @@ ADR 的使用时机、与其他文档 (API 文档、开发者文档、增强提�
 ```{toctree}
 :maxdepth: 1
 adr-rules-and-explanation
-adr-0001-omp-threads
+adr-0001-blas-threads
 ```
