@@ -7,7 +7,7 @@
 
 ## 决定
 
-- REST 目前使用 **OpenMP 编译的 OpenBLAS** 作为 BLAS 后端；本 ADR 仅对该情形有约束。其他数学库目前是实验性支持 (见第 6 节备注)。
+- REST 目前使用 **OpenMP 编译的 OpenBLAS** 作为 BLAS 后端；本 ADR 仅对该情形有约束。其他数学库目前是实验性支持 (见第 7 节备注)。
 - 在并发 (rayon) 线程内部调用 BLAS 前，调用 `omp_set_num_threads_wrapper(1)`；该函数是 thread-safe 与 thread-local 的，因此无需保存/恢复线程数。
 - 使用 RSTSR 的矩阵乘法与 einsum 时，无需手动设置线程数 (见第 5 节)。
 - 主线程初始化时，与 rayon 全局线程池的构建一起，调用一次 `omp_set_num_threads_global_wrapper` 设置全局的 BLAS 线程数；输入卡 `num_threads` 选项覆盖 `OPENBLAS_NUM_THREADS` 等环境变量的设置 (见 3.3 节)。
@@ -181,7 +181,14 @@ let c = &a % &b;      // 使用满线程数的 BLAS
 let c = &a % &b;      // 使用满线程数的 BLAS
 ```
 
-## 6. 备注 (非规范性)
+## 6. 潜在影响
+
+由于在线程内部更改了 OpenMP 的线程数设置，其他依赖 OpenMP 的库同时会受到影响。一般来说影响不大：
+- 当前的线程控制策略对其他 OpenMP 库仍然是有效且有意义的；
+- 目前 REST 所依赖的外部库中，只有 OpenBLAS 使用了 OpenMP，且其他库目前没有在并发线程中调用 OpenMP 的函数；
+但若未来需要引入其他依赖 OpenMP 的库，当前的策略可能需要调整。
+
+## 7. 备注 (非规范性)
 
 OpenMP 构建的 OpenBLAS 是 REST 唯一的规范后端；本节内容仅为未来可能支持其他数学库时提供参考，不构成支持承诺。
 
