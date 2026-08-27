@@ -3,6 +3,7 @@
 ```{toctree}
 :maxdepth: 1
 compile-guide
+adr/index
 logger
 solvers
 ri-jk/index
