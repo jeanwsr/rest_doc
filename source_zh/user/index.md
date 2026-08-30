@@ -4,6 +4,7 @@
 :maxdepth: 2
 install
 input
+basis_set
 scf
 dft
 solvent

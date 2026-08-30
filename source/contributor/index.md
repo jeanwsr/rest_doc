@@ -6,6 +6,7 @@ ri
 tddft/index
 grad-rhf
 grad-uhf
+solvers
 dft/index
 constants
 ```
