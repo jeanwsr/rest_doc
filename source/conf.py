@@ -31,6 +31,17 @@ extensions = [
     "sphinx.ext.mathjax",
 ]
 
+# -- MathJax options ----------------------------------------------------------
+# KaTeX-style \bm (bold math) is not defined by MathJax by default;
+# map it to \boldsymbol.
+mathjax4_config = {
+    "tex": {
+        "macros": {
+            r"\bm": r"\boldsymbol{#1}",
+        },
+    },
+}
+
 templates_path = ['_templates']
 exclude_patterns = []
 
