@@ -36,7 +36,7 @@ Additional remark: Many programs use sigma to denote the GGA $\gamma = \nabla \r
 
 For convenience in later program implementation and formula derivation, we write the basic DFT variables in the vector form $\boldsymbol{\xi}$[^note-1]:
 
-[^note-1]: This notation is my personal habit. The notation is taken from Su, N. Q.; Zhang, I. Y.; Xu, X. *J. Comput. Chem.* **2013**, *34* (20), 1759–1774. doi: [10.1002/jcc.23312](https://doi.org/10.1002/jcc.23312). For the $\xi_\chi$ of this document, the corresponding notation in that paper is $\zeta_\eta$. The reason for changing $\zeta$ to $\xi$ is that $\zeta$ is often used in DFT to denote the spin polarization $\zeta = (\rho^\alpha - \rho^\beta) / \rho$, and is also used in basis set functions to denote the exponentially decaying parameter $\zeta$. The reason for changing $\eta$ to $\chi$ is simply that we may later use `x` for the index of this variable in einsum notation.
+[^note-1]: The notation is taken from Su, N. Q.; Zhang, I. Y.; Xu, X. *J. Comput. Chem.* **2013**, *34* (20), 1759–1774. doi: [10.1002/jcc.23312](https://doi.org/10.1002/jcc.23312). For the $\xi_\chi$ of this document, the corresponding notation in that paper is $\zeta_\eta$. The reason for changing $\zeta$ to $\xi$ is that $\zeta$ is often used in DFT to denote the spin polarization $\zeta = (\rho^\alpha - \rho^\beta) / \rho$, and is also used in basis set functions to denote the exponentially decaying parameter $\zeta$. The reason for changing $\eta$ to $\chi$ is simply that we may later use `x` for the index of this variable in einsum notation.
 
 $$
 \boldsymbol{\xi} = (\rho, \rho^x, \rho^y, \rho^z, \tau)
