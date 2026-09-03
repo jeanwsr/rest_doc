@@ -134,7 +134,7 @@ $$
 | `nroots` | Integer | 1 | 求解的激发态数目 |
 | `grid_batch` | Bool | `true` | 仅 AO 模式：XC 核求值按格点分批，避免完整 AO-on-grid 张量常驻内存；MO 模式下忽略 |
 | `tddft_ao_rik_driver` | String | `"semitrans"` | 仅 AO 模式：交换 K 驱动方式——`"semitrans"` (占据侧半变换收缩，默认)、`"dm"` (精确批量)、`"lowrank"` (逐向量 SVD 低秩) |
-| `tddft_fxc_driver` | String | `"mo"` | 仅 AO 模式：fxc 驱动方式——`"mo"` (缓存占据侧格点投影 + 虚轨道侧流式，MO 模式 fxc 算法，occ/vir 约化收缩) 或 `"dm"` (组装密度 NIMatmul 回退路径) |
+| `tddft_fxc_driver` | String | `"semitrans"` | 仅 AO 模式：fxc 驱动方式——`"semitrans"` (C_vir 折入振幅，虚轨道侧直接与格点裸 AO 收缩，无需形成 psi_vir) 或 `"mo"` (缓存占据侧格点投影 + 虚轨道侧流式，MO 模式 fxc 算法) 或 `"dm"` (组装密度 NIMatmul 回退路径) |
 | `tddft_svd_tol` | Float | `1e-6` | 仅 AO 模式：低秩 K 的相对奇异值阈值（保留 $\sigma_i \ge \varepsilon \sigma_{\max}$） |
 | `tddft_feast_solver` | Bool | `false` | FEAST 围道积分求解器（仅 MO 模式） |
 | `response_tddft` | Bool | `false` | 启用响应 TDDFT（MO 实现） |

@@ -134,7 +134,7 @@ The main TDDFT-related input keywords (defined in `src/ctrl_io/tddft_parameters.
 | `nroots` | Integer | 1 | Number of excited states to solve for |
 | `grid_batch` | Bool | `true` | AO mode only: evaluate the XC kernel in grid batches to keep the full AO-on-grid tensor out of memory; ignored in MO mode |
 | `tddft_ao_rik_driver` | String | `"semitrans"` | AO mode only: exchange-K driver — `"semitrans"` (occupied-side semi-transformation, default), `"dm"` (exact batched density-driven), or `"lowrank"` (per-vector SVD) |
-| `tddft_fxc_driver` | String | `"mo"` | AO mode only: fxc driver — `"mo"` (default; cached occ-side grid projections with a streamed vir side, the MO-mode fxc algorithm, occ/vir-reduced contractions) or `"dm"` (assembled-density NIMatmul fallback) |
+| `tddft_fxc_driver` | String | `"semitrans"` | AO mode only: fxc driver — `"semitrans"` (C_vir folded into the amplitudes; the vir side contracts against the raw AO on grid, so no psi_vir is ever formed) or `"mo"` (cached occ-side grid projections with a streamed vir side, the MO-mode fxc algorithm) or `"dm"` (assembled-density NIMatmul fallback) |
 | `tddft_svd_tol` | Float | `1e-6` | AO mode only: relative singular-value threshold for low-rank K (keep $\sigma_i \ge \varepsilon \sigma_{\max}$) |
 | `tddft_feast_solver` | Bool | `false` | FEAST contour-integration solver (MO mode only) |
 | `response_tddft` | Bool | `false` | Enable response TDDFT (MO implementation) |
