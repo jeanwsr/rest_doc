@@ -36,7 +36,7 @@ $$
 
 为了以后程序实现与公式推演方便，记 DFT 基本参量为 $\boldsymbol{\xi}$ 的向量形式[^note-1]：
 
-[^note-1]: 该记号是我个人的习惯。该记号取材自 Su, N. Q.; Zhang, I. Y.; Xu, X. *J. Comput. Chem.* **2013**, *34* (20), 1759–1774. doi: [10.1002/jcc.23312](https://doi.org/10.1002/jcc.23312)。对应本文的 $\xi_\chi$，该文章的对应记号是 $\zeta_\eta$。之所以要更改 $\zeta$ 到 $\xi$，是因为 $\zeta$ 在 DFT 经常被用来表示自旋极化率 $\zeta = (\rho^\alpha - \rho^\beta) / \rho$，也在基组函数中被用来表示指数衰减参数 $\zeta$。之所以要更改 $\eta$ 到 $\chi$，单纯是因为我们以后可能在 einsum 记号中用 `x` 表示该参量的索引。
+[^note-1]: 该记号取材自 Su, N. Q.; Zhang, I. Y.; Xu, X. *J. Comput. Chem.* **2013**, *34* (20), 1759–1774. doi: [10.1002/jcc.23312](https://doi.org/10.1002/jcc.23312)。对应本文的 $\xi_\chi$，该文章的对应记号是 $\zeta_\eta$。之所以要更改 $\zeta$ 到 $\xi$，是因为 $\zeta$ 在 DFT 经常被用来表示自旋极化率 $\zeta = (\rho^\alpha - \rho^\beta) / \rho$，也在基组函数中被用来表示指数衰减参数 $\zeta$。之所以要更改 $\eta$ 到 $\chi$，单纯是因为我们以后可能在 einsum 记号中用 `x` 表示该参量的索引。
 
 $$
 \boldsymbol{\xi} = (\rho, \rho^x, \rho^y, \rho^z, \tau)
