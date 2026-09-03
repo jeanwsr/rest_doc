@@ -7,6 +7,5 @@ grad-rhf
 grad-uhf
 solvers
 dft/index
-nimatmul/index
 constants
 ```
