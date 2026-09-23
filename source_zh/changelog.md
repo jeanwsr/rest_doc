@@ -15,6 +15,125 @@ python3 scripts/analyze_changes.py --auto --no-fetch
 
 ---
 
+## v2026.1.1.1 → v2026.1.1.2
+
+### rest (2a2c9f6a..8f55408b)
+
+- !245 IYZ: ao2mo kernel update
+- !244 Use legacy Lebedev grids only for ISDF
+- !242 update ci
+- !241 fix ri_pt2 according to adr 0001
+- !238 addtional revise for solvent mpi
+- !236 analdrv (feat): 闭壳层双杂化多极矩、以及必要的重构
+- !217 UGW, UBSE, UTDDFT, AC-GW, RSH-TDDFT, and some optimizations in GW and hessian
+
+### rest_regression
+
+- !59 IYZ: remove bench_pool/NH3_GW
+- !58 new solvent grad example
+- !57 Modified GW-BSE references, Added UGW and UBSE
+- !56 analdrv (feat): 闭壳层双杂化多极矩 (regression)
+- !55 scope: add dispersion + solvent to MPI directory-level scope
+
+### rest_tensors
+
+- !21 Fix: 依 OpenBLAS v0.3.34 线程行为更新修该 `omp_set_num_threads_global_wrapper`
+- !20 Add zheev, zheevd and zhegv to complexmatrixfull.rs
+
+---
+
+## v2026.1.1 → v2026.1.1.1
+
+### rest (b0eb3fc4..2a2c9f6a)
+
+- !235 feat(solvent): MPI parallelization of PCM energy and gradient
+- !234 SCF MPI: collective solver-failure guard (allreduce AND)
+- !233 one more mpi gate
+- !232 Fix: get_available_memory_bytes() overestimates available memory
+- !230 Add Route Section to fchk output for issue IK8PBD
+- !228 deprecate dsd functional in legacy parser
+- !227 ci script for github side
+- !226 Add missing 2.5D modules (scsrpa_25d/rpa_25d) so the master tree compiles
+- !225 Merge upstream/master: Lebedev grid refactor + MPI cfg gate fix
+- !224 fix mpi gate
+- !223 IYZ:: RPA/R-xDH7（SCSRPA 族）MPI 缺口的 Phase 0 护栏
+- !221 Refactor (dft): 更改 Lebedev 格点生成逻辑
+
+### rest_regression
+
+- !53 remove legacy parser dsd test
+- !52 regression: rayon 77/77, mpi 54/54; dh 提升为 MPI 目录级范围；新增 RPA 解析与 R-xDH7 测试
+
+### rest_tensors
+
+- !19 make mpi optional
+- !18 fix: add new distributed hamiltonian solver to address singularity
+- !17 Modifications for implementation of AC-GW and optimization of CD-GW
+
+---
+
+## v2026.1.0.9 → v2026.1.1
+
+### rest (8ed09333..b0eb3fc4)
+
+- !222 fix: chkfile 基组路径下 aux 2c2e NaN（MPI size>=2 挂起）
+- !220 IYZ:: 2.5D MPI implementation of sBGE2
+- !219 Feature (analdrv): 增加 RSH 泛函 Hessian 支持
+- !216 Feature (analdrv): DFT-D3/4 数值 Hessian
+- !215 fix test in extfield
+- !212 IYZ:: MPI geomeTRIC and force
+- !211 修复 integration test 编译错误
+- !210 增加 analdrv 模块 json 输出信息
+- !209 add another feature in smd
+- !208 IYZ: fix a bug about missing file
+- !207 analdrv：Hessian DFT 格点偏移导数的实现
+- !206 IYZ: scalapack relevant changes
+- !205 IYZ: fix: respect j2c_decomp policy in the MPI-parallel rimatr construction
+- !204 IYZ: fix: suppress duplicate prints and checkpoint writes under MPI
+- !203 IYZ: enable the mpi version of force and xDH
+- !202 tddft ao/semi-ao mode
+- !201 add (restricted) open shell computation
+- !200 apply frozen-core in new non-MPI PT2 driver; solvent calc in initial round
+- !199 引入全局 OpenBLAS 线程数设置 (rest_tensors !13 关联改动)
+- !198 氢原子PT2计算bug修复; 溶剂化README修正
+- !197 improve basisproj and chkbasis
+- !196 add scalapack support for eigensolver
+- !195 add json output (for regression)
+
+### rest_regression
+
+- !51 Feature (analdrv): 增加 RSH 泛函 Hessian 支持
+- !49 增加 json 输出测试；增加 analdrv hessian 测试
+- !48 add test for roks basisproj and chkbasis
+
+### rest_tensors
+
+- !16 change-qr: rework QR-based pseudo-inverse (pass x explicitly, refactor)
+- !15 IYZ: scalapack relevant changes
+- !14 Add new feature to RIFull: 25d-pt2
+- !13 Fix: 修复极为偶发的自洽场数值不稳定
+- !12 add scalapack support
+
+---
+
+## v2026.1.0.8 → v2026.1.0.9
+
+### rest (3b2af4ff..8ed09333)
+
+- !197 fix rohf grad_dm and diis
+- !194 move chk save to scf
+- !183 unify davidson and krylov solvers
+
+### rest_libcint
+
+- !7 update dep
+
+### rest_regression
+
+- !47 update for krylov and davidson
+
+---
+
 ## v2026.1.0.7 → v2026.1.0.8
 
 ### rest (ded45015..3b2af4ff)
