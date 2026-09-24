@@ -2,15 +2,18 @@
 
 - **状态**：使用中
 - **日期**：2026-08-13
+- **部分取代**：第 3.3 节 (主线程初始化使用 `openblas_set_num_threads`) 已由 ADR-0002 取代 (2026-09-16)；其余决定继续有效
 - **适用范围**：REST 本体 (crate `rest`) 的全部模块 (SCF、post-SCF、GW、微扰、TD 等)，不限于特定模块。线程控制函数由 crate `rest_tensors` 提供实现；使用 RSTSR 张量运算时的处理见第 5 节。存量代码存在尚未遵循之处，将在重构中逐步对齐。
 - **作者**：祝震予 (ajz34@outlook.com)
+
+> **更新提示 (2026-09-16)**：本篇第 3.3 节所述的全局线程数初始化机制 (主线程初始化时经 `omp_set_num_threads_global_wrapper` 同时调用 `openblas_set_num_threads` 与 `omp_set_num_threads`) 已由 [ADR-0002](adr-0002-blas-global-thread-init) 取代；其余决定继续有效。
 
 ## 决定
 
 - REST 目前使用 **OpenMP 编译的 OpenBLAS** 作为 BLAS 后端；本 ADR 仅对该情形有约束。其他数学库目前是实验性支持 (见第 7 节备注)。
 - 在并发 (rayon) 线程内部调用 BLAS 前，调用 `omp_set_num_threads_wrapper(1)`；该函数是 thread-safe 与 thread-local 的，因此无需保存/恢复线程数。
 - 使用 RSTSR 的矩阵乘法与 einsum 时，无需手动设置线程数 (见第 5 节)。
-- 主线程初始化时，与 rayon 全局线程池的构建一起，调用一次 `omp_set_num_threads_global_wrapper` 设置全局的 BLAS 线程数；输入卡 `num_threads` 选项覆盖 `OPENBLAS_NUM_THREADS` 等环境变量的设置 (见 3.3 节)。
+- 主线程初始化时，与 rayon 全局线程池的构建一起，调用一次 `omp_set_num_threads_global_wrapper` 设置全局的 BLAS 线程数；输入卡 `num_threads` 选项覆盖 `OPENBLAS_NUM_THREADS` 等环境变量的设置 (见 3.3 节；该节已由 ADR-0002 取代)。
 - pthreads 并行 OpenBLAS 的支持已废止 (见 4.2 节)。
 
 决定的核心模式：
@@ -119,6 +122,8 @@ Rust 语言并不使用 OpenMP。这导致的问题是，如果我们在并行�
 需要指出，这一设置按操作系统线程生效。rayon 线程池的工作线程是长驻的，在线程执行的任务闭包开头设置即可覆盖该线程后续的 BLAS 调用 (习惯上直接在每个并发任务闭包开头调用，幂等且廉价)。但对于原生线程 (如 `std::thread::scope` 启动的工作线程)，线程设置不会从启动线程继承，需在线程闭包内部、首次调用 BLAS 前设置。
 
 ### 3.3 主线程初始化线程池时使用 `openblas_set_num_threads`
+
+本节所述机制已于 2026-09-16 由 [ADR-0002](adr-0002-blas-global-thread-init) 取代，内容留作历史记录。
 
 一些细节参考 4.1 节 (`openblas_set_num_threads` 存在 thread-safety 问题)。我们可以在主线程中调用 `openblas_set_num_threads` 来设置全局的 BLAS 线程数，但不应该在并发线程中调用该函数。
 

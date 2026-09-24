@@ -15,6 +15,125 @@ Each version segment's `### rest` header carries the short commit-hash range of 
 
 ---
 
+## v2026.1.1.1 → v2026.1.1.2
+
+### rest (2a2c9f6a..8f55408b)
+
+- !245 IYZ: update the AO2MO kernel
+- !244 Use legacy Lebedev grids only for ISDF
+- !242 Update CI
+- !241 Fix `ri_pt2` according to ADR 0001
+- !238 Additional revisions for solvent MPI
+- !236 analdrv (feat): closed-shell double-hybrid multipole moments and the necessary refactoring
+- !217 UGW, UBSE, UTDDFT, AC-GW, RSH-TDDFT, and some optimizations in GW and Hessian
+
+### rest_regression
+
+- !59 IYZ: remove `bench_pool/NH3_GW`
+- !58 New solvent gradient example
+- !57 Modified GW-BSE references; added UGW and UBSE
+- !56 analdrv (feat): closed-shell double-hybrid multipole moments (regression)
+- !55 Scope: add dispersion + solvent to the MPI directory-level scope
+
+### rest_tensors
+
+- !21 Fix: update `omp_set_num_threads_global_wrapper` according to the threading behavior of OpenBLAS v0.3.34
+- !20 Add `zheev`, `zheevd` and `zhegv` to `complexmatrixfull.rs`
+
+---
+
+## v2026.1.1 → v2026.1.1.1
+
+### rest (b0eb3fc4..2a2c9f6a)
+
+- !235 feat(solvent): MPI parallelization of PCM energy and gradient
+- !234 SCF MPI: collective solver-failure guard (allreduce AND)
+- !233 One more MPI gate
+- !232 Fix: `get_available_memory_bytes()` overestimates available memory
+- !230 Add Route Section to the FCHK output for issue IK8PBD
+- !228 Deprecate the DSD functional in the legacy parser
+- !227 CI script for the GitHub side
+- !226 Add missing 2.5D modules (`scsrpa_25d`/`rpa_25d`) so the master tree compiles
+- !225 Merge upstream/master: Lebedev grid refactor + MPI cfg gate fix
+- !224 Fix the MPI gate
+- !223 IYZ: Phase 0 guardrails for the MPI gap of RPA/R-xDH7 (SCSRPA family)
+- !221 Refactor (dft): rework the Lebedev grid generation logic
+
+### rest_regression
+
+- !53 Remove the legacy parser DSD test
+- !52 Regression: rayon 77/77, MPI 54/54; promote DH to the MPI directory-level scope; add RPA analytic and R-xDH7 tests
+
+### rest_tensors
+
+- !19 Make MPI optional
+- !18 Fix: add a new distributed Hamiltonian solver to address singularity
+- !17 Modifications for the implementation of AC-GW and optimization of CD-GW
+
+---
+
+## v2026.1.0.9 → v2026.1.1
+
+### rest (8ed09333..b0eb3fc4)
+
+- !222 Fix: aux 2c2e NaN under the chkfile basis path (hangs when MPI size >= 2)
+- !220 IYZ: 2.5D MPI implementation of sBGE2
+- !219 Feature (analdrv): support the RSH functional analytical Hessian
+- !216 Feature (analdrv): numerical Hessian for DFT-D3/4
+- !215 Fix the test in `extfield`
+- !212 IYZ: MPI geomeTRIC and force
+- !211 Fix integration test compilation errors
+- !210 Add JSON output for the analdrv module
+- !209 Add another feature in SMD
+- !208 IYZ: fix a bug about a missing file
+- !207 analdrv: implementation of the Hessian DFT grid-shift derivatives
+- !206 IYZ: ScaLAPACK-related changes
+- !205 IYZ: fix: respect the `j2c_decomp` policy in the MPI-parallel `rimatr` construction
+- !204 IYZ: fix: suppress duplicate prints and checkpoint writes under MPI
+- !203 IYZ: enable the MPI version of force and xDH
+- !202 TDDFT AO/semi-AO mode
+- !201 Add (restricted) open-shell computation
+- !200 Apply frozen-core in the new non-MPI PT2 driver; solvent calculation in the initial round
+- !199 Introduce a global OpenBLAS thread-count setting (related change in rest_tensors !13)
+- !198 Fix the hydrogen-atom PT2 bug; correct the solvation README
+- !197 Improve `basisproj` and `chkbasis`
+- !196 Add ScaLAPACK support for the eigensolver
+- !195 Add JSON output (for regression)
+
+### rest_regression
+
+- !51 Feature (analdrv): support the RSH functional analytical Hessian
+- !49 Add JSON output tests; add analdrv Hessian tests
+- !48 Add tests for ROKS `basisproj` and `chkbasis`
+
+### rest_tensors
+
+- !16 change-qr: rework the QR-based pseudo-inverse (pass `x` explicitly, refactor)
+- !15 IYZ: ScaLAPACK-related changes
+- !14 Add a new feature to RIFull: 25D-PT2
+- !13 Fix: fix the occasional SCF numerical instability
+- !12 Add ScaLAPACK support
+
+---
+
+## v2026.1.0.8 → v2026.1.0.9
+
+### rest (3b2af4ff..8ed09333)
+
+- !197 Fix ROHF `grad_dm` and DIIS
+- !194 Move chkfile saving into SCF
+- !183 Unify the Davidson and Krylov solvers
+
+### rest_libcint
+
+- !7 Update dependency
+
+### rest_regression
+
+- !47 Update for the Krylov and Davidson solvers
+
+---
+
 ## v2026.1.0.7 → v2026.1.0.8
 
 ### rest (ded45015..3b2af4ff)

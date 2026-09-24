@@ -9,4 +9,5 @@ grad-uhf
 solvers
 dft/index
 constants
+adr/index
 ```
