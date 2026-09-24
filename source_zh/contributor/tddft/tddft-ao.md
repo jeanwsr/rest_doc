@@ -12,33 +12,42 @@ MO 模式需要预先存储三个 MO 基 RI 张量，总量为 $n_\mathrm{aux}(n
 - XC 核通过 `dft::numint_matmul::NIMatmul` 在数值格点上对整块试探向量一次性批量求值（借鉴 PySCF `_gen_tda_operation` 的 `vind(zs)` 设计）；
 - 结果经 MO 系数收缩回振幅空间。
 
-## 函数 `prepare_ao_data`
+## 函数 `prepare_ao_data_with_spin`
 
-函数路径：`ri_tddft::tddft::prepare_ao_data`
+函数路径：`ri_tddft::tddft::prepare_ao_data_with_spin`（签名 `(scf, tddft_spin: Option<&str>)`；`tddft_solver` 传入输入卡解析的自旋通道，稳定性模块则无视输入卡直接传 `"singlet"`/`"triplet"`）
 
-构造 AO 模式的 `TDDFTData`。MO 专属成员 (`fxc`, `ri_*`) 为 `None`，AO 侧成员如下：
+构造 AO 模式的 `TDDFTData`。MO 专属成员 (`fxc`, `fxc_u`, `ri_terms`) 为空/`None`，AO 侧成员如下（非限制参考下每自旋扇区一项，`Vec` 长度 = `n_sectors()`）：
 
 | 成员 (`TDDFTData`) | 意义 | 维度大小 | 其他说明 |
 |--|--|--|--|
-| `c_occ` | $C_{\mu i}$ | $(n_\mathrm{basis}, n_\mathrm{occ})$ | |
-| `c_vir` | $C_{\mu a}$ | $(n_\mathrm{basis}, n_\mathrm{vir})$ | |
+| `c_occ` | $C_{\mu i}$ | $(n_\mathrm{basis}, n_\mathrm{occ})$ | 每扇区；空扇区 (occ = 0) 为零列矩阵 |
+| `c_vir` | $C_{\mu a}$ | $(n_\mathrm{basis}, n_\mathrm{vir})$ | 每扇区 |
 | `ni` | `NIMatmul` 数值积分器 | — | libcint AO 缓存；真实格点权重 |
-| `fxc_eff` | 原始核表 $f^{\mathrm{xc}}_{\alpha\beta}(g)$（含单重态因子） | $(n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{var})$ | 权重未乘，见下文 |
+| `fxc_eff` | 原始核表（含单重态因子） | 限制性 $(n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{var})$；非限制 $(n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2)$ | 权重未乘，见下文 |
 | `den_type` | `RHO` / `SIGMA` | — | 决定 $n_\mathrm{var}$ |
 | `grid_batch` | 格点分批开关 | — | |
-| `ao` / `ao_grad` | AO-on-grid 值 | $(n_\mathrm{basis}, n_\mathrm{grid})$ | 仅 dim ≤ 15 稠密路径分配 |
+| `fxc_driver` | `Option<FxcDriver>` | — | `"mo"`/`"semitrans"`/`"dm"` 之一；`None` 仅限 HF 参考 (无核，J/K only) |
+| `psi_occ` | 占据 MO 格点投影 $\psi_i(g)$ | $[n_\mathrm{grid}, n_\mathrm{occ}]$ | 仅 `MO`/`SEMITRANS` fxc 驱动构建；格点分批投影，布局 t-ready |
+| `psi_occ_grad` | $\partial_d \psi_i(g)$ | $[3, n_\mathrm{grid}, n_\mathrm{occ}]$ | 仅 GGA；前导 $d$ 轴使批切片连续 |
+
+两个早退分支：
+
+- **HF 参考**（无 libxc 组分）：`fxc_eff`/`ni`/`fxc_driver` 全为 `None`，矩阵-矢量积只跑 RI J/K 部分。这使 AO 模式 TDDFT 与稳定性分析对 HF 参考无需数值格点即可运行；
+- **RSH 泛函**：响应交换需要短程三中心积分 `scf.rimatr_sr`（由同泛函的 SCF 建立）；缺失时直接 panic 提示重跑 SCF。
 
 **核表约定**：`fxc_eff` 存储的是**未乘权重的原始核**（单重态因子 $\times 2$ 已含），而 `NIMatmul` 构造时使用真实格点权重并在 `make_fxc_pot_with_eff` 内部完成权重乘法。这与 MO 模式「`wfxc` 预乘权重」的约定不同，但两者给出的最终收缩在数学上等价。
 
-**自旋通道选择**（由 `tddft_spin` 决定）：
+**自旋通道选择**（限制性参考由 `tddft_spin` 决定；`prepare_ao_data_with_spin` 的显式参数优先于输入卡）：
 
 | 通道 | 核 | 求值方式 |
 |--|--|--|
 | 单重态 | $f_s = 2 f_u$ | 非极化求值 |
 | 非极化 'R' | $f_u$ | 非极化求值（因子 1） |
 | 三重态 | $f_t = f_{\uparrow\uparrow} - f_{\uparrow\downarrow}$ | 自旋极化求值（见下） |
+| `tddft_spin = "both"` | 单重与三重各一张 | `tddft_main` 的 `run_spin` 按通道分别调用本函数，两通道核不共享 |
+| 非限制参考 | 自旋分辨 $f_{\sigma_1\sigma_2}$ | 自旋极化求值于真实 $(\rho_{\alpha 0}, \rho_{\beta 0})$；`fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]`，无单重/三重因子 |
 
-三重态核无法由非极化求值获得：`prepare_ao_data` 以 `LibXCSpin::Polarized` 在 $\rho_\uparrow = \rho_\downarrow = \rho/2$（GGA 时梯度取半）处求出自旋分辨核 $K[g, y_1, s_1, y_2, s_2]$（REST 的极化变换已链式法则到逐自旋梯度分量），再沿反对称方向组合：
+三重态核无法由非极化求值获得：`prepare_ao_data_with_spin` 以 `LibXCSpin::Polarized` 在 $\rho_\uparrow = \rho_\downarrow = \rho/2$（GGA 时梯度取半）处求出自旋分辨核 $K[g, y_1, s_1, y_2, s_2]$（REST 的极化变换已链式法则到逐自旋梯度分量），再沿反对称方向组合：
 
 $$
 f_t[y_1, y_2](g) = \frac{1}{2} \sum_{s_1 s_2} (\pm 1)^{s_1 + s_2}\, K[g, y_1, s_1, y_2, s_2]
@@ -143,18 +152,36 @@ $$
 
 eq.1 的输出为 $[n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{set}]$，eq.2 的输出为 $[n_\mathrm{basis}, n_\mathrm{basis}, n_\mathrm{set}]$（内部已对称化），两步都对整块 $n_\mathrm{set}$ 向量一次完成。库仑与交换是浮点量受限 (flop-bound) 的缩并，保持逐向量调用；fxc 是内存/带宽受限的格点收缩，批量化后格点 AO 值与核表只读一次。
 
-**fxc 驱动方式选择** `tddft_fxc_driver`（仅 AO 模式，默认 `"dm"` = 上面的 eq.1–3 路径）：
+**fxc 驱动方式选择** `tddft_fxc_driver`（仅 AO 模式，默认 `"semitrans"`；`"dm"` 即上面的 eq.1–3 路径）：
 
 | 取值 | 每次矩阵-矢量积的主导开销 | 内存开销 | 说明 |
 |--|--|--|--|
+| `"semitrans"` (默认) | $O(n_\mathrm{occ} n_\mathrm{basis} n_\mathrm{grid})$（振幅折入 $C_{vir}$ 后与裸 AO 收缩） | 仅 ψ_occ 表 $(1{+}3\delta_\mathrm{GGA}) n_\mathrm{occ} n_\mathrm{grid}$ | 见下 |
 | `"dm"` | $O(n_\mathrm{basis}^2 n_\mathrm{grid})$（组装 $[n_\mathrm{basis},n_\mathrm{basis},m]$ 过渡密度） | 无额外 | eq.1–3 路径 |
 | `"mo"` | $O(n_\mathrm{occ} n_\mathrm{vir} n_\mathrm{grid})$ + ψ 表流量 | ψ 表 $(n_\mathrm{occ}{+}n_\mathrm{vir})(1{+}3\delta_\mathrm{GGA}) n_\mathrm{grid}$ | 见下 |
 
-**`"mo"` 驱动**：即 MO 模式 fxc 算法的 AO 移植（数学上等价，仅实现不同）——`prepare_ao_data` 以格点分批方式预先投影并缓存 occ/vir 的 MO-on-grid 表，每次矩阵-矢量积只在 occ/vir 空间收缩，与 MO 模式的 `fxc_matvec` 相同：
+**`"semitrans"` 驱动**（默认，实现于 `fxc_mo_matvec` 的 `st` 分支）：把 $C_{vir}$ **预先折叠进振幅**，使虚轨道侧在格点上直接与裸 AO 值收缩，全程不形成 ψ_vir 表：
+
+$$
+\begin{aligned}
+\tilde z^{\mathbb{A}}_{i\mu} &= \sum_{a} z^{\mathbb{A}}_{ia}\, C_{\mu a}
+&& \text{(eq.S1 每次调用一次批量 DGEMM)} \\
+\rho_z(g) &= \sum_{i} \psi_i(g) \sum_{\mu} \varphi_\mu(g)\, \tilde z^{\mathbb{A}}_{i\mu}
+&& \text{(eq.S2 } \psi_{occ}\text{-vecdot} \times \text{裸 AO GEMM)} \\
+v_{1,\alpha}(g) &= w(g)\sum_\beta f^{\mathrm{xc}}_{\alpha\beta}(g)\,\rho_\beta(g)
+&& \text{(eq.S3 与其它驱动共用)} \\
+E^{\mathbb{A}}_{ia} &= \sum_{\mu} C_{\mu a} \sum_g \varphi_\mu(g)\,\psi_i(g)\, v_{1,\alpha}(g)
+&& \text{(eq.S4 两次 GEMM：} [\,m n_\mathrm{occ}, n_\mathrm{basis}\,] \times C_{vir}\text{)}
+\end{aligned}
+$$
+
+与 `"mo"` 驱动共用同一实现框架 `fxc_mo_matvec`（仅占据侧 ψ 表缓存、格点分批 + rayon 分块），差别只在 GEMM 操作数：`"semitrans"` 的左操作数是裸 AO $[n_\mathrm{batch}, n_\mathrm{basis}]$、右操作数是折叠振幅 $[m\, n_\mathrm{occ}, n_\mathrm{basis}]$（每调用一次 eq.S1），回投时多一次 $[m\, n_\mathrm{occ}, n_\mathrm{basis}] \times C_{vir}$ GEMM；`"mo"` 的左操作数是按批投影的 ψ_vir、右操作数是原始振幅。UHF 下核收缩沿自旋分辨核表 $f[g,\alpha,\sigma_1,\beta,\sigma_2]$ 展开 (eq.S3 的 $\sigma$ 双循环)。未知取值告警并回退 `"dm"`。
+
+**`"mo"` 驱动**：即 MO 模式 fxc 算法的 AO 移植（数学上等价，仅实现不同）——`prepare_ao_data_with_spin` 以格点分批方式预先投影并缓存 occ/vir 的 MO-on-grid 表，每次矩阵-矢量积只在 occ/vir 空间收缩，与 MO 模式的 `fxc_matvec` 相同：
 
 $$\psi_i(g) = \sum_\mu C_{\mu i}\,\varphi_\mu(g) \qquad \psi_a(g) = \sum_\mu C_{\mu a}\,\varphi_\mu(g)$$
 
-（GGA 另缓存 $\partial_d\psi$，布局均为 $[n_\mathrm{grid}, \cdot]$）。每次矩阵-矢量积只做 occ/vir 空间的收缩：
+（GGA 另缓存 $\partial_d\psi$，布局均为 $[n_\mathrm{grid}, \cdot]$）。每次矩阵-矢量积只做 occ/vir 空间的收缩（occ 侧缓存、vir 侧见下文流式说明）：
 
 $$
 \rho_0(g) = \sum_{ia} z_{ia}\,\psi_i(g)\psi_a(g), \qquad
@@ -206,7 +233,7 @@ $$
 A_{ia,jb} = (\varepsilon_a - \varepsilon_i)\delta_{ij}\delta_{ab} + \left[\text{eq.1--3 施加于单位块 } E_{(ia),(jb)}\right]
 $$
 
-即以单位矩阵为试探向量块，经 `ao_a_kernel_block`（折叠 J + K + 批量 fxc + 收缩回 MO）一次性得到全部核贡献列，再加对角。模式分派由 `tddft::build_a`/`build_b` 封装（MO 分支为逐列 `a_matvec` 循环），求解器代码不感知模式。
+即以单位矩阵为试探向量块，经 `ao_kernel_block`（折叠 J + K (含 RSH 短程 $K_{SR}$，复用 `scf.rimatr_sr` 与相同的 K 驱动) + 批量 fxc + 收缩回 MO）一次性得到全部核贡献列，再加对角。非限制参考的稠密路径在拼接 $[\alpha;\beta]$ 振幅空间上执行。模式分派由 `tddft::build_a`/`build_b` 封装（MO 分支为逐列 `a_matvec` 循环），求解器代码不感知模式。
 
 ## 批量 Davidson 接口
 
