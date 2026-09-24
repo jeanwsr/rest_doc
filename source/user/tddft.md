@@ -6,7 +6,7 @@ REST's TDDFT feature coverage:
 
 - **Closed-shell (restricted) references**: `tddft_spin` selects singlet, triplet, or both excitation channels;
 - **Open-shell (unrestricted) references**: `spin_polarization = true` runs an unrestricted TDDFT (UTDDFT), see "Unrestricted references" below;
-- **Functional coverage**: LDA, GGA, hybrid, and range-separated hybrid (RSH) functionals, see "Range-separated hybrid functionals" below;
+- **Functional coverage**: LDA, GGA, hybrid, and range-separated hybrid (RSH) functionals (selected directly with `xc`, no TDDFT-side settings required);
 - **Two kernel implementations**: the MO mode (default) and the lower-memory AO mode, selected by `tddft_mode`;
 - **Analytic excited-state gradients** (`tddft_grad_state`) and the **PySOC spin-orbit coupling export** (`pysoc`).
 
@@ -33,10 +33,6 @@ General advice: use the default `"mo"` mode for routine singlet valence excitati
 ### Unrestricted references (UTDDFT)
 
 Setting `spin_polarization = true` in `[ctrl]` (UHF/UKS reference) runs an unrestricted TDDFT. The unrestricted response has a single spin-coupled channel (the α and β excitation sectors are coupled by the spin-independent Coulomb kernel), so the `tddft_spin` keyword does not apply — an explicit `tddft_spin` in an unrestricted run raises an error. Both the MO and AO kernel modes support unrestricted references.
-
-### Range-separated hybrid (RSH) functionals
-
-TDDFT supports range-separated hybrid functionals (`wb97x`, `camb3lyp`, `lc-wpbe`, `hse06`, etc.): simply select them with the `xc` keyword in `[ctrl]`, with no TDDFT-side settings required. The response exchange is automatically handled in its short-range/long-range parts, and the required short-range RI integrals are built automatically during the SCF. RSH works with both the MO and AO kernel modes; triplet excitations still require AO mode.
 
 ## Input keywords
 
@@ -211,8 +207,5 @@ The unrestricted output covers both spin channels (e.g. `#3a->#5b` means an exci
 
 ## Notes
 
-- **RI acceleration prerequisite**: the TDDFT module relies on RI acceleration. The deck must provide `auxbas_path` and set `eri_type = "ri-v"`. The short-range exchange integrals of RSH functionals are built automatically during the SCF; no extra settings are needed.
 - **Solver selection**: for small systems (restricted excitation space dim ≤ 15; unrestricted MO mode TDA ≤ 15, Full LR ≤ 80) the program automatically uses dense diagonalization (full LR diagonalizes the non-Hermitian $[\mathbf{A}\ \mathbf{B}; -\mathbf{B}\ -\mathbf{A}]$ directly); for medium and larger systems the Davidson iterative solver is the default (batched interface in AO mode); the FEAST solver is available for specific energy windows (restricted references + MO mode only).
 - **Singlet/triplet excitations**: controlled by `tddft_spin` for restricted references; triplets and `"both"` require `tddft_mode = "ao"`. Unrestricted references have a single spin-coupled channel and do not accept `tddft_spin`.
-- **Analytic gradient**: restricted references only; the TDDFT solve must run first in the same task; the gradient is analytic within the RI approximation.
-- **Response TDDFT**: the response-mode linear system is a 4-component non-Hermitian system with 4 times the dimension of the eigenvalue mode. The Klopper subspace solver is the recommended choice.
