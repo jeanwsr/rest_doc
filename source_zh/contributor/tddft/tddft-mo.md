@@ -95,7 +95,7 @@ MO 模式的 XC 核以「MO 轨道值 × XC 核」的方式施加。`prepare_fxc
 |--|--|--|--|
 | `nvar` | 密度变量数 | | LDA 1 / GGA 4 |
 | `ngrids` | 格点数 $n_\mathrm{grid}$ | | |
-| `nocc` / `nvir` | 冻结芯处理后的占据/虚轨道数 | | |
+| `nocc` / `nvir` | 冻芯处理后的占据/虚轨道数 | | |
 | `mo_occ` | $\varphi_i(g)$ | $(n_\mathrm{occ}, n_\mathrm{grid})$ | |
 | `mo_vir` | $\varphi_a(g)$ | $(n_\mathrm{vir}, n_\mathrm{grid})$ | |
 | `mo_occ_grad` / `mo_vir_grad` | $\nabla\varphi(g)$ | 各 $(n_\mathrm{occ/vir}, n_\mathrm{grid})\times 3$ | 仅 GGA |

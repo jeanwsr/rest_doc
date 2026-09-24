@@ -86,7 +86,7 @@ $$
 
 ### 非限制参考 (UTDDFT)
 
-非限制 (UHF/UKS) 参考的响应只有**单一**自旋耦合通道：激发空间为 α、β 两扇区占据→虚轨道旋转的拼接 $[z_\alpha; z_\beta]$，两扇区通过自旋无关的库仑核耦合（$J[\sum_\tau z^\tau]$），不存在限制性形式中「因子 2 / 因子 0」的自旋适配对，因此 `tddft_spin` 不适用（显式给出即报错）。XC 核为自旋分辨核 $f_{\sigma_1\sigma_2}[g,\alpha,\beta]$（无单重/三重因子），MO 模式存于 `fxc_u` (spin-resolved `FXCMatvecDataUnrestricted`)，AO 模式存于自旋极化的 `fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]`。虚轨道截断 (`tddft_cutoff_energy`) 在 α/β 通道独立解析（`tddft_occupation_parameters_u`）；冻结芯（`mol.start_mo`，由 `frozen_core_postscf` 控制）为两通道共享；空扇区 (如 β 无占据) 以零维扇区参与。振幅后处理 (跃迁偶极、振子强度、主导跃迁打印) 遵循 PySCF `uhf.py` 约定。
+非限制 (UHF/UKS) 参考的响应只有**单一**自旋耦合通道：激发空间为 α、β 两扇区占据→虚轨道旋转的拼接 $[z_\alpha; z_\beta]$，两扇区通过自旋无关的库仑核耦合（$J[\sum_\tau z^\tau]$），不存在限制性形式中「因子 2 / 因子 0」的自旋适配对，因此 `tddft_spin` 不适用（显式给出即报错）。XC 核为自旋分辨核 $f_{\sigma_1\sigma_2}[g,\alpha,\beta]$（无单重/三重因子），MO 模式存于 `fxc_u` (spin-resolved `FXCMatvecDataUnrestricted`)，AO 模式存于自旋极化的 `fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]`。虚轨道截断 (`tddft_cutoff_energy`) 在 α/β 通道独立解析（`tddft_occupation_parameters_u`）；冻芯（`mol.start_mo`，由 `frozen_core_postscf` 控制）为两通道共享；空扇区 (如 β 无占据) 以零维扇区参与。振幅后处理 (跃迁偶极、振子强度、主导跃迁打印) 遵循 PySCF `uhf.py` 约定。
 
 MO 模式与 AO 模式均支持非限制参考。求解器分层与限制性情形相同，稠密对角化阈值独立放宽：MO-U TDA $\dim \le 15$ (`dsyev`)、MO-U Full LR $\dim \le 80$ (直接构造非厄米 $[\mathbf{A}\ \mathbf{B};-\mathbf{B}\ -\mathbf{A}]$ 并以 `dgeev` 对角化)。
 
@@ -197,7 +197,7 @@ tddft_main(scf)
     ├── Step 2: 确定轨道扇区
     │   ├── 限制性: tddft_occupation_parameters() → (start_mo, occ_size, vir_size, dim)
     │   └── 非限制: tddft_occupation_parameters_u() → [α 扇区, β 扇区]
-    │       虚轨道截断 (tddft_cutoff_energy) 在此处理；冻结芯为 mol.start_mo (由 frozen_core_postscf 控制)
+    │       虚轨道截断 (tddft_cutoff_energy) 在此处理；冻芯为 mol.start_mo (由 frozen_core_postscf 控制)
     │
     ├── Step 3: 生成初始猜测 + 对角预条件器
     │   └── build_hdiag() + generate_initial_guess() (来自 solvers/davidson)
