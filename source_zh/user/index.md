@@ -8,6 +8,8 @@ basis_set
 scf
 dft
 solvent
+tddft
+stability
 post_process
 gw
 geomopt
