@@ -2,22 +2,24 @@
 
 Time-dependent density functional theory (TDDFT) is the workhorse for computing molecular excitation energies and properties. REST supports RI (Resolution of Identity)-accelerated linear-response TDDFT, including both the TDA (Tamm-Dancoff Approximation) and the full linear response (Full LR) schemes, as well as frequency-domain response TDDFT.
 
-In addition, REST provides:
+REST's TDDFT feature coverage:
 
-- **Unrestricted TDDFT (UTDDFT)**: excited-state calculations on an unrestricted (UHF/UKS) reference with `spin_polarization = true`;
-- **TDDFT for range-separated hybrid (RSH) functionals** ($\omega$B97X, CAM-B3LYP, etc.);
-- **SCF wave-function stability analysis**: detects whether the SCF solution is a saddle point (RHF/RKS and UHF/UKS references);
-- **Analytic excited-state gradients**: the analytic nuclear gradient of a selected excited state (`tddft_grad_state`), usable directly in geometry optimizations and similar tasks;
-- **PySOC export**: exports the singlet/triplet amplitudes to a PySOC-readable JSON file for subsequent spin-orbit coupling calculations.
+- **Closed-shell (restricted) references**: `tddft_spin` selects singlet, triplet, or both excitation channels;
+- **Open-shell (unrestricted) references**: `spin_polarization = true` runs an unrestricted TDDFT (UTDDFT), see "Unrestricted references" below;
+- **Functional coverage**: LDA, GGA, hybrid, and range-separated hybrid (RSH) functionals, see "Range-separated hybrid functionals" below;
+- **Two kernel implementations**: the MO mode (default) and the lower-memory AO mode, selected by `tddft_mode`;
+- **Analytic excited-state gradients** (`tddft_grad_state`) and the **PySOC spin-orbit coupling export** (`pysoc`).
+
+The SCF wave-function stability analysis (detecting whether the SCF solution is a saddle point) is provided by this module but documented as a separate feature: see [SCF wave-function stability analysis](stability.md).
 
 ## Calculation modes
 
-REST's TDDFT module provides two calculation modes (the input keyword `tddft_mode`):
+REST's TDDFT module provides two calculation modes:
 
 1. **Eigenvalue TDDFT**: solves the Casida equation and directly yields excitation energies $\omega_n$ and oscillator strengths. Both TDA and Full LR are supported.
 2. **Response TDDFT**: solves the frequency-space linear system to obtain the frequency-dependent dynamic polarizability $\alpha_{zz}(\omega)$. Several iterative solvers are available (MO implementation and restricted references only).
 
-Both modes build the diagonal from the KS orbital energies and accelerate the Coulomb and exchange matrix-vector products through RI. The exchange-correlation (fxc) kernel is evaluated via libxc, supporting LDA, GGA, hybrid, and range-separated hybrid functionals.
+Both modes build the diagonal from the KS orbital energies and accelerate the Coulomb and exchange matrix-vector products through RI.
 
 ### Kernel implementation mode `tddft_mode`
 
@@ -31,6 +33,10 @@ General advice: use the default `"mo"` mode for routine singlet valence excitati
 ### Unrestricted references (UTDDFT)
 
 Setting `spin_polarization = true` in `[ctrl]` (UHF/UKS reference) runs an unrestricted TDDFT. The unrestricted response has a single spin-coupled channel (the α and β excitation sectors are coupled by the spin-independent Coulomb kernel), so the `tddft_spin` keyword does not apply — an explicit `tddft_spin` in an unrestricted run raises an error. Both the MO and AO kernel modes support unrestricted references.
+
+### Range-separated hybrid (RSH) functionals
+
+TDDFT supports all range-separated hybrid functionals (`wb97x`, `wb97x-d`, `camb3lyp`, etc.): simply select them with the `xc` keyword in `[ctrl]`, with no TDDFT-side settings required. The response exchange is automatically handled in its short-range/long-range parts, and the required short-range RI integrals are built automatically during the SCF. RSH works with both the MO and AO kernel modes; triplet excitations still require AO mode.
 
 ## Input keywords
 
@@ -68,13 +74,7 @@ The following keywords take effect only with `tddft_mode = "ao"` (ignored in MO 
 
 ### SCF stability analysis
 
-| Keyword | Type | Default | Description |
-|---|---|---|---|
-| `stability` | String | `"off"` | SCF wave-function stability analysis: `"internal"` (RHF/RKS singlet or UHF/UKS orbital Hessian), `"external"` (RHF→UHF triplet channel check, RHF/RKS only), `"full"` (internal + external), `"auto"` (recommended; every check applicable to the reference). Any value other than `"off"` makes this task **stability-only — no excited-state calculation is performed** |
-| `stability_nroots` | usize | 3 | Number of lowest stability-Hessian eigenvalues to solve for |
-| `stability_tol` | f64 | 1.0e-8 | Davidson convergence threshold for the stability Hessian |
-
-NOTE: the `check_stab` keyword in the top-level `[ctrl]` block accepts the same values as `stability`. When both are present, `[tddft] stability` wins. A stability-only deck needs no other excited-state settings.
+The keywords of the SCF wave-function stability analysis (`stability`/`stability_nroots`/`stability_tol` and `[ctrl] check_stab`) are documented on their own page: see [SCF wave-function stability analysis](stability.md).
 
 ### Analytic excited-state gradient
 
@@ -184,20 +184,7 @@ The program first converges the SCF, then calls the TDDFT module to compute the 
      nroots =                    6
 ```
 
-### Example 3: SCF stability analysis
-
-```toml
-[tddft]
-     stability =                 "auto"
-     stability_nroots =          3
-
-[ctrl]
-     check_stab =                "auto"
-```
-
-NOTE: either `stability` or `check_stab` being other than `"off"` triggers the stability analysis (the former wins); the task only performs the stability check and does not compute excited states. The lowest eigenvalue $\lambda_{\min} < -10^{-5}$ reports an instability; the results are both printed and written to the `"stability"` field of `rest_results.json`.
-
-### Example 4: analytic excited-state gradient
+### Example 3: analytic excited-state gradient
 
 ```toml
 [tddft]
@@ -208,7 +195,7 @@ NOTE: either `stability` or `check_stab` being other than `"off"` triggers the s
 
 In a gradient task (`jobtype = force`), the program solves the TDDFT first and then adds the response contribution of the first excited state to the ground-state gradient, printing the total gradient. The same gradient feeds geometry optimizations.
 
-### Example 5: unrestricted TDDFT
+### Example 4: unrestricted TDDFT
 
 ```toml
 [ctrl]
@@ -227,6 +214,5 @@ The unrestricted output covers both spin channels (e.g. `#3a->#5b` means an exci
 - **RI acceleration prerequisite**: the TDDFT module relies on RI acceleration. The deck must provide `auxbas_path` and set `eri_type = "ri-v"`. The short-range exchange integrals of RSH functionals are built automatically during the SCF; no extra settings are needed.
 - **Solver selection**: for small systems (restricted excitation space dim ≤ 15; unrestricted MO mode TDA ≤ 15, Full LR ≤ 80) the program automatically uses dense diagonalization (full LR diagonalizes the non-Hermitian $[\mathbf{A}\ \mathbf{B}; -\mathbf{B}\ -\mathbf{A}]$ directly); for medium and larger systems the Davidson iterative solver is the default (batched interface in AO mode); the FEAST solver is available for specific energy windows (restricted references + MO mode only).
 - **Singlet/triplet excitations**: controlled by `tddft_spin` for restricted references; triplets and `"both"` require `tddft_mode = "ao"`. Unrestricted references have a single spin-coupled channel and do not accept `tddft_spin`.
-- **Stability analysis**: mutually exclusive with the excited-state run; a DFT reference requires the numerical grids (HF references work without grids and automatically evaluate the RI J/K parts only); ROHF references are not supported; the real→complex and UHF→GHF external checks are not yet implemented.
 - **Analytic gradient**: restricted references only; the TDDFT solve must run first in the same task; the gradient is analytic within the RI approximation.
 - **Response TDDFT**: the response-mode linear system is a 4-component non-Hermitian system with 4 times the dimension of the eigenvalue mode. The Klopper subspace solver is the recommended choice.

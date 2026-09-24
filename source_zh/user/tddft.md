@@ -1,23 +1,25 @@
 # TDDFT 激发态计算
 
-含时密度泛函理论 (Time-Dependent Density Functional Theory, TDDFT) 是计算分子激发态能量和性质的主流方法。REST 程序支持基于 RI (Resolution of Identity) 加速的线性响应 TDDFT 计算，包括 TDA (Tamm-Dancoff Approximation) 和全线性响应 (Full LR) 两种方案，以及频率域的响应 TDDFT 计算。
+含时密度泛函理论 (Time-Dependent Density Functional Theory, TDDFT) 是计算分子激发态能量和性质的主流方法。REST 程序支持基于 RI (Resolution of Identity) 加速的线性响应 TDDFT，包括 TDA (Tamm-Dancoff Approximation) 和全线性响应 (Full LR) 两种方案，以及频率域的响应 TDDFT 计算。
 
-此外，REST 还提供：
+REST 的 TDDFT 功能覆盖：
 
-- **非限制 TDDFT (UTDDFT)**：以 `spin_polarization = true` 的非限制 (UHF/UKS) 参考态作激发态计算；
-- **范围分离杂化 (RSH) 泛函**的 TDDFT（如 $\omega$B97X、CAM-B3LYP 等）；
-- **SCF 波函数稳定性分析**：检测 SCF 解是否为鞍点（RHF/RKS 与 UHF/UKS 参考）；
-- **激发态解析核梯度**：对指定激发态计算解析核梯度（`tddft_grad_state`），可直接用于几何优化等任务；
-- **PySOC 导出**：将单重态/三重态振幅导出为 PySOC 可读的 JSON 文件，用于后续自旋-轨道耦合计算。
+- **闭壳层 (限制性) 参考**：`tddft_spin` 选择单重态、三重态或双通道激发；
+- **开壳层 (非限制) 参考**：`spin_polarization = true` 即可进行非限制 TDDFT (UTDDFT)，见下文「非限制参考」；
+- **泛函覆盖**：LDA、GGA、杂化与范围分离杂化 (RSH) 泛函，见下文「范围分离杂化泛函」；
+- **两种内核实现**：MO 模式 (默认) 与更低内存的 AO 模式，由 `tddft_mode` 选择；
+- **激发态解析核梯度** (`tddft_grad_state`) 与 **PySOC 自旋-轨道耦合导出** (`pysoc`)。
+
+SCF 波函数稳定性分析 (检测 SCF 解是否为鞍点) 由本模块提供，但作为独立功能单独成页：见 [SCF 波函数稳定性分析](stability.md)。
 
 ## 计算模式
 
-REST 的 TDDFT 模块提供两种计算模式（输入关键字 `tddft_mode`）：
+REST 的 TDDFT 模块提供两种计算模式：
 
 1. **本征值 TDDFT**：求解 Casida 方程，直接获得激发能 $\omega_n$ 和振子强度。支持 TDA 和 Full LR 方案。
 2. **响应 TDDFT**：求解频率空间的线性方程组，获得频率依赖的动态极化率 $\alpha_{zz}(\omega)$。支持多种迭代求解器（仅 MO 实现、限制性参考）。
 
-两种模式均基于 KS 轨道能量构建对角项，并通过 RI 加速库仑与交换矩阵-矢量积运算。XC 核 (fxc kernel) 通过 libxc 计算，支持 LDA、GGA、杂化与范围分离杂化泛函。
+两种模式均基于 KS 轨道能量构建对角项，并通过 RI 加速库仑与交换矩阵-矢量积运算。
 
 ### 内核实现模式 `tddft_mode`
 
@@ -31,6 +33,10 @@ REST 的 TDDFT 模块提供两种计算模式（输入关键字 `tddft_mode`）�
 ### 非限制参考 (UTDDFT)
 
 在 `[ctrl]` 中设置 `spin_polarization = true`（UHF/UKS 参考）即可进行非限制 TDDFT。非限制响应只有单一的自旋耦合通道（α 与 β 激发通道通过自旋无关的库仑核耦合），因此 `tddft_spin` 关键字不适用——在非限制计算中显式给出 `tddft_spin` 会直接报错。MO 与 AO 两种内核模式均支持非限制参考。
+
+### 范围分离杂化 (RSH) 泛函
+
+TDDFT 支持全部范围分离杂化泛函（如 `wb97x`、`wb97x-d`、`camb3lyp` 等），在 `[ctrl]` 中以 `xc` 关键字直接选择即可，无需任何 TDDFT 侧的额外设置：响应交换自动按短程/长程两部分处理，所需的短程 RI 积分在 SCF 阶段自动构建。RSH 兼容 MO 与 AO 两种内核模式；三重态激发仍要求 AO 模式。
 
 ## 输入关键字
 
@@ -68,13 +74,7 @@ REST 的 TDDFT 模块提供两种计算模式（输入关键字 `tddft_mode`）�
 
 ### SCF 稳定性分析
 
-| 关键字 | 类型 | 缺省值 | 说明 |
-|---|---|---|---|
-| `stability` | String | `"off"` | SCF 波函数稳定性分析：`"internal"` (RHF/RKS 单重或 UHF/UKS 轨道 Hessian)、`"external"` (RHF→UHF 三重通道检查，仅 RHF/RKS)、`"full"` (internal + external)、`"auto"` (推荐，自动选择适用于当前参考的全部检查)。设为 `"off"` 以外的值时，本任务**只做稳定性分析、不做激发态计算** |
-| `stability_nroots` | usize | 3 | 稳定性 Hessian 求解的最低本征值数目 |
-| `stability_tol` | f64 | 1.0e-8 | 稳定性 Hessian 的 Davidson 收敛阈值 |
-
-NOTE: 顶层 `[ctrl]` 区块中的 `check_stab` 关键字接受与 `stability` 相同的取值。两者同时存在时 `[tddft] stability` 优先。仅需稳定性分析时，输入卡无需实际准备激发态计算的其他设置。
+SCF 波函数稳定性分析的关键字 (`stability`/`stability_nroots`/`stability_tol` 及 `[ctrl] check_stab`) 与用法单独成页，见 [SCF 波函数稳定性分析](stability.md)。
 
 ### 激发态解析梯度
 
@@ -184,20 +184,7 @@ NOTE: 采样格点按外循环 X、中循环 Y、内循环 Z 的顺序生成。�
      nroots =                    6
 ```
 
-### 示例 3：SCF 稳定性分析
-
-```toml
-[tddft]
-     stability =                 "auto"
-     stability_nroots =          3
-
-[ctrl]
-     check_stab =                "auto"
-```
-
-NOTE: `stability` 与 `check_stab` 任一非 `"off"` 即触发稳定性分析（前者优先）；本任务只做稳定性检查，不计算激发态。最低本征值 $\lambda_{\min} < -10^{-5}$ 即报告不稳定，结果同时打印到输出并写入 `rest_results.json` 的 `"stability"` 字段。
-
-### 示例 4：激发态解析梯度
+### 示例 3：激发态解析梯度
 
 ```toml
 [tddft]
@@ -208,7 +195,7 @@ NOTE: `stability` 与 `check_stab` 任一非 `"off"` 即触发稳定性分析（
 
 在梯度任务 (`jobtype = force`) 中，程序先求解 TDDFT，再将第 1 个激发态的响应贡献加入基态梯度，输出总梯度。该梯度同样可用于几何优化。
 
-### 示例 5：非限制 TDDFT
+### 示例 4：非限制 TDDFT
 
 ```toml
 [ctrl]
@@ -227,6 +214,5 @@ NOTE: `stability` 与 `check_stab` 任一非 `"off"` 即触发稳定性分析（
 - **RI 加速前提**：TDDFT 模块依赖 RI 积分加速。输入卡中必须提供 `auxbas_path` 并设置 `eri_type = "ri-v"`。RSH 泛函的短程交换积分在 SCF 阶段自动构建，无需额外设置。
 - **求解器选择**：对小型体系 (限制性参考激发空间维度 ≤15；非限制 MO 模式 TDA ≤15、Full LR ≤80)，程序自动使用稠密对角化 (Full LR 为非厄米 $[\mathbf{A}\ \mathbf{B}; -\mathbf{B}\ -\mathbf{A}]$ 直接对角化)；中等以上体系默认使用 Davidson 迭代求解器 (AO 模式为批量接口)；特定能量窗口计算可启用 FEAST 求解器（仅限制性 + MO 模式）。
 - **单重/三重激发**：限制性参考通过 `tddft_spin` 控制；三重态与 `"both"` 需要 `tddft_mode = "ao"`。非限制参考只有单一自旋耦合通道，不接受 `tddft_spin`。
-- **稳定性分析**：与激发态计算互斥；需要 DFT 参考提供数值格点（HF 参考无需格点，自动只算 RI J/K 部分）；ROHF 参考不支持；实→复稳定性与 UHF→GHF 外稳定性尚未实现。
 - **解析梯度**：仅限制性参考；需先在同行任务中完成 TDDFT 求解；梯度为 RI 近似下的解析梯度。
 - **响应 TDDFT**：响应模式的线性系统为 4 分量非厄米方程组，维度为本征值模式的 4 倍。Klopper 子空间求解器是推荐选择。
