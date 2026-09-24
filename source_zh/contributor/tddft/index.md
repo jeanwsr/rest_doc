@@ -64,11 +64,10 @@ $$
 
 - 对纯泛函：$c_x = 0$
 - 对杂化泛函：$c_x = \alpha_{\text{hybrid}}$
-- 对单重态：$\kappa_c = 2$
-- 对非极化 ('R') 情形：$\kappa_c = 1$
-- 对三重态：$\kappa_c = 0$
+- 对限制性参考的单重态：$\kappa_c = 2$
+- 对限制性参考的三重态：$\kappa_c = 0$
 
-REST 的矩阵-矢量积接口统一以 `xlet: char` 标记通道：`'S'`/`'T'`/`'R'` 分别对应上述单重/三重/非极化权重；非限制参考使用单位权重（见下文「非限制参考」）。
+非限制参考的库仑项以单位权重 ($\kappa_c = 1$) 耦合 $\alpha$/$\beta$ 两个自旋扇区（见下文「非限制参考」），因此上述按限制性自旋适配的 $\kappa_c$ 因子不再适用。REST 的矩阵-矢量积接口以 `xlet: char` 标记通道：`'S'`/`'T'` 对应限制性单重/三重态，`'R'` 为非自旋适配的通用标记（供非限制参考与稳定性分析的 UHF 路径使用）。
 
 ### XC 核的自旋通道
 
@@ -267,18 +266,7 @@ main_driver (SCF 收敛后、激发态计算之前)
 
 ### 激发态解析梯度 (`tddft_grad::TddftGradEngine`)
 
-```
-main_driver::eval_force (梯度任务)
-    │
-    ├── tddft_grad_state > 0 且 TDDFT 已求解
-    │   ├── 取该态振幅 → normalize → (x, y)
-    │   └── TddftGradEngine::new(scf, state, singlet, tda, x, y)
-    │       └── response_gradient() → [3, natm]
-    │
-    └── 叠加到基态梯度 (de_TDDFT = de_GS + response)
-```
-
-详见 [tddft-grad](tddft-grad.md)。
+`tddft_grad_state > 0` 时，梯度任务在 `main_driver::eval_force` 中把激发态响应梯度叠加到基态梯度上。模块细节待补充，见 [tddft-grad](tddft-grad.md)。
 
 ## 代码结构
 

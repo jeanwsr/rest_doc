@@ -57,7 +57,7 @@ K^\mathbb{A}_{ia} &\mathrel{{+}{=}} -c_{LR} \sum_{jP} B_{ij, P}\, \mathscr{T}_{(
 \end{aligned}
 $$
 
-where $\kappa_c$ is the Coulomb coupling factor determined by `xlet` (2 for `'S'` singlet, 1 for `'R'` unpolarized, 0 for `'T'` triplet; unrestricted references use unit weight). For ordinary hybrids the exchange coefficients are $(c_x, 0)$, i.e. the second term of eq.5 vanishes. eq.2–3 and eq.4–5 are each a DGEMV + DGEMM chain; the fxc contribution is added by `fxc_matvec` (see below). The B-block exchange index ordering $(ib|aj)$ is realized with the same pair of tensors plus the transposed amplitude and is not repeated here.
+where $\kappa_c$ is the Coulomb coupling factor determined by `xlet` (restricted reference: 2 for `'S'` singlet, 0 for `'T'` triplet; an unrestricted reference couples its two spin sectors with unit weight 1, with `'R'` as the generic non-spin-adapted marker for that path). For ordinary hybrids the exchange coefficients are $(c_x, 0)$, i.e. the second term of eq.5 vanishes. eq.2–3 and eq.4–5 are each a DGEMV + DGEMM chain; the fxc contribution is added by `fxc_matvec` (see below). The B-block exchange index ordering $(ib|aj)$ is realized with the same pair of tensors plus the transposed amplitude and is not repeated here.
 
 | Variable | Meaning | Index order | Dimensions | Remarks |
 |--|--|--|--|--|

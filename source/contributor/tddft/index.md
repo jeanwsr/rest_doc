@@ -64,11 +64,10 @@ where $\varepsilon_i, \varepsilon_a$ are the KS orbital energies (occupied and v
 
 - Pure functionals: $c_x = 0$
 - Hybrid functionals: $c_x = \alpha_{\text{hybrid}}$
-- Singlet: $\kappa_c = 2$
-- Unpolarized ('R'): $\kappa_c = 1$
-- Triplet: $\kappa_c = 0$
+- Singlet (restricted reference): $\kappa_c = 2$
+- Triplet (restricted reference): $\kappa_c = 0$
 
-REST's matrix-vector product interface labels the channel uniformly by `xlet: char`: `'S'`/`'T'`/`'R'` correspond to the singlet/triplet/unpolarized weights above; an unrestricted reference uses unit weights (see "Unrestricted references" below).
+For an unrestricted reference the Coulomb term couples the $\alpha$/$\beta$ spin sectors with unit weight ($\kappa_c = 1$; see "Unrestricted references" below), so the restricted spin-adapted $\kappa_c$ factors above no longer apply. REST's matrix-vector product interface labels the channel by `xlet: char`: `'S'`/`'T'` correspond to the restricted singlet/triplet channels, while `'R'` is the generic non-spin-adapted marker used by the unrestricted and UHF-stability code paths.
 
 ### Spin channels of the XC kernel
 
@@ -267,18 +266,7 @@ See [tddft-stability](tddft-stability.md) for details.
 
 ### Analytic excited-state gradient (`tddft_grad::TddftGradEngine`)
 
-```
-main_driver::eval_force (gradient tasks)
-    │
-    ├── tddft_grad_state > 0 and TDDFT already solved
-    │   ├── take the amplitudes of that state → normalize → (x, y)
-    │   └── TddftGradEngine::new(scf, state, singlet, tda, x, y)
-    │       └── response_gradient() → [3, natm]
-    │
-    └── add onto the ground-state gradient (F_TDDFT = F_GS + F_response)
-```
-
-See [tddft-grad](tddft-grad.md) for details.
+When `tddft_grad_state > 0`, gradient tasks add the excited-state response gradient onto the ground-state gradient inside `main_driver::eval_force`. Module details are yet to be written; see [tddft-grad](tddft-grad.md).
 
 ## Code structure
 
