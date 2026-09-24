@@ -4,9 +4,9 @@ Function path: `ri_tddft::stability::stability` (`src/ri_tddft/stability.rs`)
 
 ## Overview
 
-An SCF solution may be a **saddle point** of the energy surface rather than a minimum (the classic example being the unstable RHF solution for $\mathrm{O_2}$, $\mathrm{O_3}$, etc.). The stability analysis expands the energy to second order around the converged solution and checks whether the Hessian in the orbital-rotation space is positive definite: a negative eigenvalue signals a downhill orbital-rotation direction, i.e. an unstable SCF solution.
+An SCF solution may be a **saddle point** of the energy surface rather than a minimum. The stability analysis expands the energy to second order around the converged solution and checks whether the Hessian in the orbital-rotation space is positive definite: a negative eigenvalue signals a downhill orbital-rotation direction, i.e. an unstable SCF solution.
 
-REST's stability analysis is built entirely on the AO-mode TDDFT (A/B) matrix-vector machinery (see [tddft-ao](tddft-ao.md)): the stability operator is the **(A+B) orbital Hessian**, and its lowest eigenvalues are obtained with the batched Davidson solver. The analysis is **check-only**: it reports instabilities and their directions (the eigenvectors), but does not automatically rotate the orbitals and re-run the SCF (orbital following is not implemented).
+REST's stability analysis is built entirely on the AO-mode TDDFT (A/B) matrix-vector machinery (see [tddft-ao](tddft-ao.md)): the stability operator is the **(A+B) orbital Hessian**, and its lowest eigenvalues are obtained with the batched Davidson solver. The analysis is **check-only**: it prints the lowest eigenvalues and the stable/unstable verdict — no eigenvectors are exposed, and the orbitals are not automatically rotated to re-run the SCF (orbital following is not implemented).
 
 ## Theoretical background
 
@@ -24,7 +24,7 @@ The channels and factors used by REST (matching PySCF `rhf_internal`/`uhf_intern
 | RHF/RKS external (RHF→UHF) | $\mathbf{A}^{\mathrm{T}} + \mathbf{B}^{\mathrm{T}}$ | `'T'` (triplet) | 1 |
 | UHF/UKS internal | $2(\mathbf{A} + \mathbf{B})$ (concatenated $[\alpha;\beta]$ rotation space) | `'R'` | 2 |
 
-**Stability criterion**: stable iff $\lambda_{\min} \ge -10^{-5}$ (`STABILITY_THRESHOLD`, the PySCF threshold); otherwise an instability is reported, and the eigenvector of a negative eigenvalue spans the downhill orbital-rotation direction.
+**Stability criterion**: stable iff $\lambda_{\min} \ge -10^{-5}$ (`STABILITY_THRESHOLD`, the PySCF threshold); otherwise the reference is unstable in that channel (a downhill orbital-rotation direction exists).
 
 References: Seeger & Pople, JCP 66, 3045 (1977); Bauernschmitt & Ahlrichs, JCP 104, 9047 (1996); PySCF `scf/stability.py`.
 

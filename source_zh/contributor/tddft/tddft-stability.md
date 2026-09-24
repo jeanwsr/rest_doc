@@ -4,9 +4,9 @@
 
 ## 概述
 
-SCF 收敛解可能只是能量表面的**鞍点**而非极小点（最经典的例子是 RHF 对 $\mathrm{O_2}$、$\mathrm{O_3}$ 等体系给出的不稳定解）。稳定性分析在收敛解附近对能量作二阶展开，检查轨道旋转空间的 Hessian 是否正定：存在负本征值即说明存在能量下降的轨道旋转方向，该 SCF 解不稳定。
+SCF 收敛解可能只是能量表面的**鞍点**而非极小点。稳定性分析在收敛解附近对能量作二阶展开，检查轨道旋转空间的 Hessian 是否正定：存在负本征值即说明存在能量下降的轨道旋转方向，该 SCF 解不稳定。
 
-REST 的稳定性分析完全构建在 AO 模式 TDDFT 的 (A/B) 矩阵-矢量积机制之上（见 [tddft-ao](tddft-ao.md)）：稳定性算符就是 **(A+B) 轨道 Hessian**，本征值用批量 Davidson 求解器取最低若干个。分析为**只查 (check-only)** 模式：报告不稳定性及其方向 (本征矢量)，但不自动旋转轨道并重跑 SCF (orbital following 未实现)。
+REST 的稳定性分析完全构建在 AO 模式 TDDFT 的 (A/B) 矩阵-矢量积机制之上（见 [tddft-ao](tddft-ao.md)）：稳定性算符就是 **(A+B) 轨道 Hessian**，本征值用批量 Davidson 求解器取最低若干个。分析为**只查 (check-only)** 模式：输出最低若干本征值与稳定/不稳定结论，不输出本征矢量，也不自动旋转轨道并重跑 SCF (orbital following 未实现)。
 
 ## 理论背景
 
@@ -24,7 +24,7 @@ REST 采用的通道与因子 (与 PySCF `rhf_internal`/`uhf_internal`/`rhf_exte
 | RHF/RKS external (RHF→UHF) | $\mathbf{A}^{\mathrm{T}} + \mathbf{B}^{\mathrm{T}}$ | `'T'` (三重) | 1 |
 | UHF/UKS internal | $2(\mathbf{A} + \mathbf{B})$ (拼接 $[\alpha;\beta]$ 旋转空间) | `'R'` | 2 |
 
-**稳定性判据**：$\lambda_{\min} \ge -10^{-5}$ (`STABILITY_THRESHOLD`，PySCF 阈值) 则稳定；否则报告不稳定，负本征值对应的本征矢量即能量下降方向的轨道旋转。
+**稳定性判据**：$\lambda_{\min} \ge -10^{-5}$ (`STABILITY_THRESHOLD`，PySCF 阈值) 则稳定；否则该通道不稳定（存在能量下降的轨道旋转方向）。
 
 参考文献：Seeger & Pople, JCP 66, 3045 (1977)；Bauernschmitt & Ahlrichs, JCP 104, 9047 (1996)；PySCF `scf/stability.py`。
 

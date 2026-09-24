@@ -1,13 +1,13 @@
 # SCF Wave-Function Stability Analysis
 
-An SCF solution may be a **saddle point** of the energy surface rather than a minimum (the classic example being the unstable RHF solution for $\mathrm{O_2}$, $\mathrm{O_3}$, etc.). REST provides a wave-function stability analysis based on the (A+B) orbital Hessian (Seeger & Pople, JCP 66, 3045 (1977)), executed after SCF convergence: the solution is unstable when the lowest eigenvalue $\lambda_{\min} < -10^{-5}$, and the eigenvector of a negative eigenvalue spans the downhill orbital-rotation direction.
+An SCF solution may be a **saddle point** of the energy surface rather than a minimum. REST provides an SCF wave-function stability analysis (Seeger & Pople, JCP 66, 3045 (1977)): after SCF convergence, it checks whether the second derivative of the energy with respect to occupied→virtual orbital rotations (the orbital Hessian) is positive definite. The solution is unstable when the lowest eigenvalue $\lambda_{\min} < -10^{-5}$.
 
 The checks supported by REST:
 
 - **internal stability**: the RHF/RKS singlet channel or the UHF/UKS orbital Hessian;
 - **external stability**: the RHF→UHF direction (triplet channel), restricted references only.
 
-The analysis is **check-only**: it reports instabilities and their directions, but does not automatically rotate the orbitals and re-run the SCF.
+The analysis is **check-only**: it prints the lowest eigenvalues and the stable/unstable verdict, but does not automatically rotate the orbitals and re-run the SCF.
 
 ## Input keywords
 
@@ -48,7 +48,7 @@ The results are also written to the `"stability"` field of `rest_results.json` (
 
 | Reference | internal | external |
 |--|--|--|
-| RHF/RKS | $4(\mathbf{A}^{\mathrm{S}} + \mathbf{B}^{\mathrm{S}})$, singlet instability directions | $\mathbf{A}^{\mathrm{T}} + \mathbf{B}^{\mathrm{T}}$, RHF→UHF instability direction |
+| RHF/RKS | $4(\mathbf{A}^{\mathrm{S}} + \mathbf{B}^{\mathrm{S}})$, probes singlet-channel instabilities | $\mathbf{A}^{\mathrm{T}} + \mathbf{B}^{\mathrm{T}}$, probes the RHF→UHF (triplet-channel) instability |
 | UHF/UKS | $2(\mathbf{A} + \mathbf{B})$ (concatenated α/β rotation space) | not implemented (UHF→GHF), automatically skipped |
 
 Criterion: the channel is stable iff $\lambda_{\min} \ge -10^{-5}$; a negative eigenvalue means the SCF solution is a saddle point in that channel — consider a different initial guess (`initial_guess`), mixer, or an unrestricted reference.
@@ -56,7 +56,6 @@ Criterion: the channel is stable iff $\lambda_{\min} \ge -10^{-5}$; a negative e
 ## Notes
 
 - **Mutually exclusive with the excited-state run**: when `stability` is not `"off"`, the task only performs the stability check and does not compute excitation energies.
-- **Numerical grids**: DFT references require the grids (prepared automatically by a regular SCF); HF references need no grids and automatically evaluate the RI J/K parts only.
 - **Reference types**: ROHF references are not supported; the real→complex check and the UHF→GHF external check are not yet implemented.
 - `"auto"` is recommended: it runs every check applicable to the current reference.
 
