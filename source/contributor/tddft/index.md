@@ -1,6 +1,6 @@
 # TDDFT Module
 
-The TDDFT module of REST (`src/ri_tddft/`) implements RI-accelerated linear-response time-dependent density functional theory. It reuses the Davidson solver, response-equation solvers, and the FEAST contour-integration solver from the BSE module (`ri_bse`), but builds the diagonal from KS orbital energies (rather than GW quasiparticle energies).
+The TDDFT module of REST (`src/ri_tddft/`) implements RI-accelerated linear-response time-dependent density functional theory. It reuses the generic Davidson solver (`solvers::davidson`) and the FEAST contour-integration solver (`solvers::feast`), together with the response-equation solvers and dipole tools from the BSE module (`ri_bse`), but builds the diagonal from KS orbital energies (rather than GW quasiparticle energies).
 
 Capability overview:
 
@@ -295,7 +295,7 @@ The `src/ri_tddft/` directory contains:
 | `stability.rs` | SCF wave-function stability analysis (`stability`, `StabilityReport`): the AO-mode (A+B) orbital Hessian + batched Davidson |
 | `tddft_grad.rs` | analytic excited-state gradient (`TddftGradEngine`): an RI port of PySCF `grad/tdrks.py`/`tdrhf.py` |
 | `utils.rs` | utilities: `tddft_occupation_parameters`/`_u`/`tddft_sector_params` (orbital sectors), `tddft_get_submatrix` (RI submatrix extraction), `compute_tddft_dipole_matrix` (transition dipoles) |
-| `feast_solver.rs` | FEAST solver wrapper (MO mode, restricted references): adapts the TDDFT matrix-vector products to the generic `ri_bse::feast_solver::feast()` interface |
+| `feast_solver.rs` | FEAST solver wrapper (MO mode, restricted references): adapts the TDDFT matrix-vector products to the generic `solvers::feast` interface |
 
 Input parameters are defined in `src/ctrl_io/tddft_parameters.rs`.
 
@@ -310,23 +310,15 @@ Input parameters are defined in `src/ctrl_io/tddft_parameters.rs`.
 | `dft::numint_matmul` | AO-mode XC kernel: `NIMatmul` (grid AO cache, batched density construction and kernel contraction), `eval_vxc_fxc_from_rho` (raw kernel table) |
 | `dft::xceff` | libxc evaluation wrappers (`libxc_eval_eff`, `determine_den_type`); the triplet spin-polarized kernel is composed on top of these |
 | `ri_jk` | AO-mode J/K: `get_vj_ri_incore_nonsym`, `get_vk_ri_incore_dm`, `get_vk_ri_incore_dm_lowrank`, `get_vk_ri_incore_coeff_pair` (notation: the [ri documentation](../ri.md)) |
-| `ri_bse` | Coulomb contribution (`coulomb_contribution`), response-equation solvers (Pople/GMRES/Klopper), dipole tools (`dipoles::normalize` etc.), FEAST algorithm, `pysoc_export` |
+| `ri_bse` | Coulomb contribution (`coulomb_contribution`), response-equation solvers (Pople/GMRES/Klopper, adapted from `ri_bse::response`), dipole tools (`dipoles::normalize` etc.), `pysoc_export` |
 | `solvers::davidson` | generic Davidson solvers: per-vector interface (`davidson_solver`, `lr_davidson_solver`) and batched interface (`davidson_solver_batched`, `lr_davidson_solver_batched`) |
+| `solvers::feast` | generic FEAST contour-integration algorithm |
 | `ri_cphf` | CPHF Z-vector solve for the gradient module (`CPHFSolverPySCF`) |
 | `ri_gw::gw_grad` | raw RI tensors and atom-derivative blocks reused by the gradient module (`RawRiTensors`, `AtomDerivBlocks`) |
 
-### Downstream consumers
-
-| Call site | Purpose |
-|----------|------|
-| `main_driver.rs` | invokes `tddft_main()` or `response_tddft()` after SCF convergence; `stability::stability()` (stability analysis, results into `rest_results.json`); `TddftGradEngine` in gradient tasks (`tddft_grad_state > 0`) |
-| `ri_cphf/cphf_solver_pyscf.rs` | uses `tddft_occupation_parameters()` for orbital dimensions |
-| `dft/num_int.rs` | uses `tddft_occupation_parameters()` for orbital dimensions |
-| `dft/response.rs` | uses `tddft_occupation_parameters()` for orbital dimensions |
-
 ### Relationship with BSE
 
-The TDDFT module reuses substantial infrastructure from `ri_bse` (solvers, dipole tools, response solvers), with two key differences:
+The TDDFT module reuses infrastructure from `ri_bse` (response solvers, dipole tools), with two key differences:
 
 1. **Diagonal**: TDDFT uses KS orbital-energy differences $\varepsilon_a - \varepsilon_i$, whereas BSE uses GW quasiparticle-energy differences.
 2. **Data flow**: TDDFT sits directly in the `main_driver` call chain (alongside PT2 and RPA), whereas BSE requires a preceding GW calculation.

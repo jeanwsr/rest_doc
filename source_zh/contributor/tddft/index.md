@@ -1,6 +1,6 @@
 # TDDFT 模块
 
-REST 的 TDDFT 模块 (`src/ri_tddft/`) 实现了基于 RI 加速的线性响应含时密度泛函理论。该模块复用了 BSE (`ri_bse`) 模块中的 Davidson 求解器、响应方程求解器和 FEAST 围道积分求解器等基础设施，但使用 KS 轨道能量（而非 GW 准粒子能量）构建对角项。
+REST 的 TDDFT 模块 (`src/ri_tddft/`) 实现了基于 RI 加速的线性响应含时密度泛函理论。该模块复用 `solvers::davidson` 的通用 Davidson 求解器与 `solvers::feast` 围道积分求解器，以及 BSE (`ri_bse`) 模块中的响应方程求解器与偶极工具，但使用 KS 轨道能量（而非 GW 准粒子能量）构建对角项。
 
 模块能力概览：
 
@@ -295,7 +295,7 @@ main_driver::eval_force (梯度任务)
 | `stability.rs` | SCF 波函数稳定性分析 (`stability`, `StabilityReport`)。AO 模式 (A+B) 轨道 Hessian + batched Davidson |
 | `tddft_grad.rs` | 激发态解析梯度 (`TddftGradEngine`)。PySCF `grad/tdrks.py`/`tdrhf.py` 的 RI 移植 |
 | `utils.rs` | 工具函数。`tddft_occupation_parameters`/`_u`/`tddft_sector_params` (轨道扇区计算)、`tddft_get_submatrix` (RI 子矩阵抽取)、`compute_tddft_dipole_matrix` (跃迁偶极) |
-| `feast_solver.rs` | FEAST 求解器封装 (仅 MO 模式、限制性参考)。将 TDDFT 的矩阵-矢量积适配到通用 `ri_bse::feast_solver::feast()` 接口 |
+| `feast_solver.rs` | FEAST 求解器封装 (仅 MO 模式、限制性参考)。将 TDDFT 的矩阵-矢量积适配到通用 `solvers::feast` 接口 |
 
 输入参数定义位于 `src/ctrl_io/tddft_parameters.rs`。
 
@@ -310,23 +310,15 @@ main_driver::eval_force (梯度任务)
 | `dft::numint_matmul` | AO 模式 XC 核：`NIMatmul` (格点 AO 缓存、批量密度构造与核收缩)、`eval_vxc_fxc_from_rho` (原始核表) |
 | `dft::xceff` | libxc 求值封装 (`libxc_eval_eff`, `determine_den_type`)；三重态自旋极化核在此之上组合 |
 | `ri_jk` | AO 模式 J/K：`get_vj_ri_incore_nonsym`、`get_vk_ri_incore_dm`、`get_vk_ri_incore_dm_lowrank`、`get_vk_ri_incore_coeff_pair` (记号见 [ri-jk 文档](../ri-jk/index.md)) |
-| `ri_bse` | 提供 Coulomb 贡献 (`coulomb_contribution`)、响应方程求解器 (Pople/GMRES/Klopper)、偶极积分工具 (`dipoles::normalize` 等)、FEAST 算法、`pysoc_export` |
+| `ri_bse` | 提供 Coulomb 贡献 (`coulomb_contribution`)、响应方程求解器 (Pople/GMRES/Klopper，`ri_bse::response` 的适配复用)、偶极工具 (`dipoles::normalize` 等)、`pysoc_export` |
 | `solvers::davidson` | 提供通用 Davidson 求解器：逐向量接口 (`davidson_solver`, `lr_davidson_solver`) 与批量接口 (`davidson_solver_batched`, `lr_davidson_solver_batched`) |
+| `solvers::feast` | 提供通用 FEAST 围道积分算法 |
 | `ri_cphf` | 梯度模块的 CPHF Z-vector 求解 (`CPHFSolverPySCF`) |
 | `ri_gw::gw_grad` | 梯度模块复用的 RI 原始张量与原子导数分块 (`RawRiTensors`, `AtomDerivBlocks`) |
 
-### 下游消费者
-
-| 调用位置 | 用途 |
-|----------|------|
-| `main_driver.rs` | 在 SCF 收敛后调用 `tddft_main()` 或 `response_tddft()`；`stability::stability()` (稳定性分析，结果入 `rest_results.json`)；梯度任务中调用 `TddftGradEngine` (`tddft_grad_state > 0`) |
-| `ri_cphf/cphf_solver_pyscf.rs` | 使用 `tddft_occupation_parameters()` 获取轨道维度 |
-| `dft/num_int.rs` | 使用 `tddft_occupation_parameters()` 获取轨道维度 |
-| `dft/response.rs` | 使用 `tddft_occupation_parameters()` 获取轨道维度 |
-
 ### 与 BSE 的关系
 
-TDDFT 模块重用了 `ri_bse` 模块的大量基础设施（求解器、偶极工具、响应求解器），但有两项关键差异：
+TDDFT 模块重用了 `ri_bse` 模块的响应求解器与偶极工具等基础设施，但有两项关键差异：
 
 1. **对角项**：TDDFT 使用 KS 轨道能量差 $\varepsilon_a - \varepsilon_i$，而 BSE 使用 GW 准粒子能量差。
 2. **数据流**：TDDFT 位于 `main_driver` 的直接调用链上（与 PT2、RPA 并列），而 BSE 需要先运行 GW 计算。
