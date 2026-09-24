@@ -17,7 +17,7 @@ Underlined subscripts denote indices that are batched during evaluation.
 
 Function path: `ri_tddft::tddft::prepare_mo_data`
 
-Builds the `TDDFTData`: it calls `prepare_fxc_data` for the fxc kernel table, and extracts three MO-basis RI submatrices from `scf.rimatr` via `tddft_get_submatrix`, reshaping three further tensors as required by the exchange contractions:
+Builds the `TDDFTData`: it calls `prepare_fxc_data` (or the spin-resolved `prepare_fxc_data_unrestricted` for an unrestricted reference, stored as `fxc_u`) for the fxc kernel table, and extracts three MO-basis RI submatrices from `scf.rimatr` via `tddft_get_submatrix`, reshaping three further tensors as required by the exchange contractions. A restricted reference carries one bundle; an unrestricted reference carries one per spin sector (stored in `TDDFTData.ri_terms: Vec<RITensorTerms>`):
 
 $$
 \begin{aligned}
@@ -25,17 +25,20 @@ B_{ia, P} &\;\leftarrow\; \texttt{tddft\_get\_submatrix}(\texttt{'O'}, \texttt{'
 \end{aligned}
 $$
 
-| Variable (`TDDFTData` member) | Meaning | Index order | Dimensions | Remarks |
+| Variable (`RITensorTerms` member) | Meaning | Index order | Dimensions | Remarks |
 |--|--|--|--|--|
-| `ri_ov` | $B_{ia, P}$ | $(P, ia)$ | $(n_\mathrm{aux}, n_\mathrm{occ} n_\mathrm{vir})$ | Coulomb |
-| `ri_oo_exch` | $B_{ij, P}$ | $(jP, i)$ | $(n_\mathrm{occ} n_\mathrm{aux}, n_\mathrm{occ})$ | A-block exchange |
-| `ri_vv_exch` | $B_{ab, P}$ | $(P a, b)$ | $(n_\mathrm{aux} n_\mathrm{vir}, n_\mathrm{vir})$ | A-block exchange |
-| `ri_ov_exch` | $B_{ia, P}$ | $(P i, a)$ | $(n_\mathrm{aux} n_\mathrm{occ}, n_\mathrm{vir})$ | B-block exchange |
-| `fxc` | `FXCMatvecData` | — | see below | XC kernel table (singlet) |
+| `coulomb` | $B_{ia, P}$ | $(P, ia)$ | $(n_\mathrm{aux}, n_\mathrm{occ} n_\mathrm{vir})$ | Coulomb |
+| `oo_exch` | $B_{ij, P}$ | $(jP, i)$ | $(n_\mathrm{occ} n_\mathrm{aux}, n_\mathrm{occ})$ | A-block exchange |
+| `vv_exch` | $B_{ab, P}$ | $(P a, b)$ | $(n_\mathrm{aux} n_\mathrm{vir}, n_\mathrm{vir})$ | A-block exchange |
+| `ov_exch` | $B_{ia, P}$ | $(P i, a)$ | $(n_\mathrm{aux} n_\mathrm{occ}, n_\mathrm{vir})$ | B-block exchange |
+| `oo_sr`/`vv_sr`/`ov_sr` | $B^{\mathrm{SR}}_{\cdots, P}$ | as above | as above | RSH only: the short-range $\mathrm{erfc}(\omega r_{12})/r_{12}$ exchange triple, built only when $|c_{SR}-c_{LR}| > 10^{-12}$ |
+| `fxc` (TDDFTData) | `FXCMatvecData` | — | see below | XC kernel table (singlet); `fxc_u` for unrestricted; `None` for an HF reference (no kernel, J/K only) |
+
+The exchange mixing coefficients are not stored at data-preparation time: they are derived per matrix-vector product from `scf.mol.xc_data` (RSH → $(c_{LR},\, c_{SR}-c_{LR})$; ordinary hybrids → $(c_x, 0)$); see "Range-separated hybrids" in [index](index.md).
 
 ## Function `a_matvec`
 
-Function path: `ri_tddft::matvec::a_matvec`
+Function path: `ri_tddft::matvec::a_matvec` (signature `(scf, data, z, xlet)`; `xlet: char` labels the spin channel)
 
 Computes the A-block matrix-vector product $K^\mathbb{A}_{ia} = \sum_{jb} A_{ia,jb} z^\mathbb{A}_{jb}$ in four steps:
 
@@ -49,19 +52,19 @@ K^\mathbb{A}_{ia} &\mathrel{{+}{=}} \kappa_c \sum_{P} B_{ia, P}\, \mathscr{T}_{P
 && \text{(eq.3 Coulomb)} \\
 \mathscr{T}_{(Pa), j}^{\mathbb{A}} &= \sum_{b} B_{ab, P}\, z_{jb}^{\mathbb{A}}
 && \text{(eq.4)} \\
-K^\mathbb{A}_{ia} &\mathrel{{+}{=}} -c_x \sum_{jP} B_{ij, P}\, \mathscr{T}_{(Pa), j}^{\mathbb{A}}
-&& \text{(eq.5 exchange)}
+K^\mathbb{A}_{ia} &\mathrel{{+}{=}} -c_{LR} \sum_{jP} B_{ij, P}\, \mathscr{T}_{(Pa), j}^{\mathbb{A}} - (c_{SR}-c_{LR}) \sum_{jP} B^{\mathrm{SR}}_{ij, P}\, \mathscr{T}^{\mathbb{A}}_{(Pa), j}
+&& \text{(eq.5 exchange, RSH)}
 \end{aligned}
 $$
 
-where $\kappa_c$ is the Coulomb coupling factor (2 for singlets, 1 for unpolarized 'R', 0 for triplets). eq.2–3 and eq.4–5 are each a DGEMV + DGEMM chain; the fxc contribution is added by `fxc_matvec` (see below). The B-block exchange index ordering $(ib|aj)$ is realized with the same pair of tensors plus the transposed amplitude and is not repeated here.
+where $\kappa_c$ is the Coulomb coupling factor determined by `xlet` (2 for `'S'` singlet, 1 for `'R'` unpolarized, 0 for `'T'` triplet; unrestricted references use unit weight). For ordinary hybrids the exchange coefficients are $(c_x, 0)$, i.e. the second term of eq.5 vanishes. eq.2–3 and eq.4–5 are each a DGEMV + DGEMM chain; the fxc contribution is added by `fxc_matvec` (see below). The B-block exchange index ordering $(ib|aj)$ is realized with the same pair of tensors plus the transposed amplitude and is not repeated here.
 
 | Variable | Meaning | Index order | Dimensions | Remarks |
 |--|--|--|--|--|
 | `z` | $z_{ia}^{\mathbb{A}}$ | $(i, a)$ | $(n_\mathrm{occ} n_\mathrm{vir})$ | column-major, consistent with the amplitude printing |
-| `ri_ov` | $B_{ia,P}$ | $(P, ia)$ | $(n_\mathrm{aux}, n_\mathrm{occ}n_\mathrm{vir})$ | |
-| `ri_oo_exch` | $B_{ij,P}$ | $(jP, i)$ | $(n_\mathrm{occ}n_\mathrm{aux}, n_\mathrm{occ})$ | |
-| `ri_vv_exch` | $B_{ab,P}$ | $(Pa, b)$ | $(n_\mathrm{aux}n_\mathrm{vir}, n_\mathrm{vir})$ | |
+| `coulomb` | $B_{ia,P}$ | $(P, ia)$ | $(n_\mathrm{aux}, n_\mathrm{occ}n_\mathrm{vir})$ | |
+| `oo_exch` | $B_{ij,P}$ | $(jP, i)$ | $(n_\mathrm{occ}n_\mathrm{aux}, n_\mathrm{occ})$ | |
+| `vv_exch` | $B_{ab,P}$ | $(Pa, b)$ | $(n_\mathrm{aux}n_\mathrm{vir}, n_\mathrm{vir})$ | |
 
 | Memory type | Equation | Expression | Index order | Memory | Remarks |
 |--|--|--|--|--|--|
@@ -71,16 +74,16 @@ where $\kappa_c$ is the Coulomb coupling factor (2 for singlets, 1 for unpolariz
 
 ## Function `b_matvec`
 
-Function path: `ri_tddft::matvec::b_matvec`
+Function path: `ri_tddft::matvec::b_matvec` (signature `(scf, data, z, xlet)`)
 
 $$
 \begin{aligned}
-K^\mathbb{A}_{ia} &= \kappa_c \sum_{jb} (ia|jb)\, z_{jb}^{\mathbb{A}} - c_x \sum_{jb} (ib|aj)\, z_{jb}^{\mathbb{A}} + f^{\mathrm{xc}}_{ia,jb} z_{jb}^{\mathbb{A}}
+K^\mathbb{A}_{ia} &= \kappa_c \sum_{jb} (ia|jb)\, z_{jb}^{\mathbb{A}} - c_{LR} \sum_{jb} (ib|aj)\, z_{jb}^{\mathbb{A}} - (c_{SR}-c_{LR}) \sum_{jb} (ib|aj)_{\mathrm{SR}}\, z_{jb}^{\mathbb{A}} + f^{\mathrm{xc}}_{ia,jb} z_{jb}^{\mathbb{A}}
 && \text{(eq.1)}
 \end{aligned}
 $$
 
-Differences from the A block: no diagonal term; the Coulomb part reuses the same `ri_ov` contraction; the exchange index ordering is realized through `ri_ov_exch` with the transposed amplitude.
+Differences from the A block: no diagonal term; the Coulomb part reuses the same `coulomb` contraction; the exchange index ordering is realized through `ov_exch` (plus `ov_sr` for RSH) with the transposed amplitude.
 
 ## fxc kernel table and `FXCMatvecData`
 
@@ -111,13 +114,15 @@ K^\mathbb{A}_{ia} &= \sum_g \varphi_i(g)\, v^{\mathbb{A}}(g)\, \varphi_a(g)
 \end{aligned}
 $$
 
-Spin channels: the MO-mode `wfxc` table is fixed to the singlet kernel $f_s = 2 f_u$ (`SINGLET_FXC_FACTOR`); the unpolarized ('R') response uses the bare kernel $f_u$ (factor 1). **Triplets are not supported in MO mode** — `tddft_main` raises an explicit error; use AO mode instead (see [tddft-ao](tddft-ao.md)).
+Spin channels: the MO-mode `wfxc` table is prepared per channel by the `run_spin` closure of `tddft_main` — the singlet kernel $f_s = 2 f_u$ (`SINGLET_FXC_FACTOR`); the unpolarized ('R') response uses the bare kernel $f_u$ (factor 1). **Triplets are not supported in MO mode** — `tddft_main` raises an explicit error; use AO mode instead (see [tddft-ao](tddft-ao.md)). Unrestricted references use the spin-resolved table `fxc_u: FXCMatvecDataUnrestricted` (storing $f_{\sigma_1\sigma_2}$ per grid point, no singlet/triplet factors; see "Unrestricted references" in [index](index.md)).
 
 ## Solver interface
 
-The MO-mode Davidson iteration uses the per-vector interface (one trial vector applied at a time):
+The MO-mode Davidson iteration (restricted and unrestricted references) uses the per-vector interface (one trial vector applied at a time):
 
 - `solvers::davidson::davidson_solver` (alias `tda_davidson_solver`), closure type `FnMut(&Vec<f64>) -> Vec<f64>`;
 - `solvers::davidson::lr_davidson_solver` for the symmetrized Casida equation of full linear response.
 
 Both are per-column adapters around the batched cores `davidson_solver_batched` / `lr_davidson_solver_batched`. AO mode uses the batched interface to amortize the on-grid evaluation cost (see [tddft-ao](tddft-ao.md)).
+
+Dense small-system path: for restricted references with $\dim \le 15$, full LR first builds A and B and attempts the $(\mathbf{A}-\mathbf{B})$ symmetrized reduction (`dense_lr_eigenpairs`), falling back to TDA (diagonalizing A only) when $\mathbf{A}-\mathbf{B}$ is not positive-definite; unrestricted MO references have separate relaxed dense thresholds (TDA $\dim \le 15$, LR $\dim \le 80$, the latter diagonalizing the non-Hermitian matrix directly, see [index](index.md)).
