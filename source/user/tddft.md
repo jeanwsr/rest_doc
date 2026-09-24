@@ -36,7 +36,7 @@ Setting `spin_polarization = true` in `[ctrl]` (UHF/UKS reference) runs an unres
 
 ### Range-separated hybrid (RSH) functionals
 
-TDDFT supports all range-separated hybrid functionals (`wb97x`, `wb97x-d`, `camb3lyp`, etc.): simply select them with the `xc` keyword in `[ctrl]`, with no TDDFT-side settings required. The response exchange is automatically handled in its short-range/long-range parts, and the required short-range RI integrals are built automatically during the SCF. RSH works with both the MO and AO kernel modes; triplet excitations still require AO mode.
+TDDFT supports range-separated hybrid functionals (`wb97x`, `camb3lyp`, `lc-wpbe`, `hse06`, etc.): simply select them with the `xc` keyword in `[ctrl]`, with no TDDFT-side settings required. The response exchange is automatically handled in its short-range/long-range parts, and the required short-range RI integrals are built automatically during the SCF. RSH works with both the MO and AO kernel modes; triplet excitations still require AO mode.
 
 ## Input keywords
 
