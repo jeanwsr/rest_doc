@@ -86,7 +86,7 @@ where $f_{\uparrow\uparrow}$ and $f_{\uparrow\downarrow}$ are the spin-resolved 
 
 ### Unrestricted references (UTDDFT)
 
-The unrestricted (UHF/UKS) response has a **single** spin-coupled channel: the excitation space is the concatenation $[z_\alpha; z_\beta]$ of the α and β occupied→virtual rotation sectors, coupled through the spin-independent Coulomb kernel ($J[\sum_\tau z^\tau]$). There is no spin-adapted "factor 2 / factor 0" pair, so `tddft_spin` does not apply (an explicit value is rejected). The XC kernel is the spin-resolved kernel $f_{\sigma_1\sigma_2}[g,\alpha,\beta]$ (no singlet/triplet factors): stored as `fxc_u` (spin-resolved `FXCMatvecDataUnrestricted`) in MO mode, or as the spin-polarized `fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]` in AO mode. The orbital windows (`tddft_cutoff_energy`, frozen core) are resolved independently on each spin channel (`tddft_occupation_parameters_u`); an empty sector (e.g. no β occupation) participates as a zero-dimensional sector. Amplitude post-processing (transition dipoles, oscillator strengths, leading-transition printing) follows the PySCF `uhf.py` conventions.
+The unrestricted (UHF/UKS) response has a **single** spin-coupled channel: the excitation space is the concatenation $[z_\alpha; z_\beta]$ of the α and β occupied→virtual rotation sectors, coupled through the spin-independent Coulomb kernel ($J[\sum_\tau z^\tau]$). There is no spin-adapted "factor 2 / factor 0" pair, so `tddft_spin` does not apply (an explicit value is rejected). The XC kernel is the spin-resolved kernel $f_{\sigma_1\sigma_2}[g,\alpha,\beta]$ (no singlet/triplet factors): stored as `fxc_u` (spin-resolved `FXCMatvecDataUnrestricted`) in MO mode, or as the spin-polarized `fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]` in AO mode. The virtual-orbital cutoff (`tddft_cutoff_energy`) is resolved independently on each spin channel (`tddft_occupation_parameters_u`); the frozen core (`mol.start_mo`, controlled by `frozen_core_postscf`) is shared by both channels; an empty sector (e.g. no β occupation) participates as a zero-dimensional sector. Amplitude post-processing (transition dipoles, oscillator strengths, leading-transition printing) follows the PySCF `uhf.py` conventions.
 
 Both MO and AO modes support unrestricted references. The solver layering matches the restricted case, with separate (relaxed) dense thresholds: MO-U TDA $\dim \le 15$ (`dsyev`), MO-U Full LR $\dim \le 80$ (the explicit non-Hermitian $[\mathbf{A}\ \mathbf{B};-\mathbf{B}\ -\mathbf{A}]$ diagonalized via `dgeev`).
 
@@ -160,9 +160,10 @@ The main TDDFT-related input keywords (defined in `src/ctrl_io/tddft_parameters.
 | `tddft_mode` | String | `"mo"` | `"mo"` (MO-basis RI tensors) or `"ao"` (AO transition-density kernel) |
 | `tddft_spin` | String | `"singlet"` | `"singlet"` / `"triplet"` / `"both"`; triplet and both are AO-mode-only and restricted-reference-only (explicit values are rejected for unrestricted references) |
 | `nroots` | Integer | 6 | Number of excited states to solve for |
+| `tddft_use_optimized_fxc` | Bool | `true` | Use the rayon-parallel fxc matrix-vector kernel |
 | `davidson_tol` | Float | `1e-10` | Davidson convergence threshold: $\|r\| < \sqrt{\varepsilon}$ and $|\Delta E| < \varepsilon$ |
 | `davidson_max_iter` | Integer | 50 | Maximum Davidson iterations |
-| `davidson_max_subspace` | Integer | 60 | Maximum subspace dimension multiplier (full LR needs a large subspace to converge before the first restart; do not shrink it casually) |
+| `davidson_max_subspace` | Integer | 60 | Maximum subspace capacity (actual subspace dimension = `max(4 × nroots, davidson_max_subspace)`, truncated to the excitation-space dimension; full LR needs a large subspace to converge before the first restart; do not shrink it casually) |
 | `grid_batch` | Bool | `true` | AO mode only: evaluate the XC kernel in grid batches to keep the full AO-on-grid tensor out of memory; ignored in MO mode |
 | `tddft_ao_rik_driver` | String | `"semitrans"` | AO mode only: exchange-K driver — `"semitrans"` (occupied-side semi-transformation, default), `"dm"` (exact batched density-driven), or `"lowrank"` (per-vector SVD) |
 | `tddft_fxc_driver` | String | `"semitrans"` | AO mode only: fxc driver — `"semitrans"` (C_vir folded into the amplitudes; the vir side contracts against the raw AO on grid, so no psi_vir is ever formed) or `"mo"` (cached occ-side grid projections with a streamed vir side, the MO-mode fxc algorithm) or `"dm"` (assembled-density NIMatmul fallback; unknown values warn and fall back here) |
@@ -196,7 +197,7 @@ tddft_main(scf)
     ├── Step 2: resolve the orbital sectors
     │   ├── restricted: tddft_occupation_parameters() → (start_mo, occ_size, vir_size, dim)
     │   └── unrestricted: tddft_occupation_parameters_u() → [α sector, β sector]
-    │       frozen core (< -2.0 Ha) and virtual truncation (tddft_cutoff_energy) handled here
+    │       virtual truncation (tddft_cutoff_energy) handled here; frozen core is mol.start_mo (via frozen_core_postscf)
     │
     ├── Step 3: initial guess + diagonal preconditioner
     │   └── build_hdiag() + generate_initial_guess() (from solvers/davidson)

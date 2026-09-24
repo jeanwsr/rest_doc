@@ -55,7 +55,7 @@ All TDDFT-related keywords are declared in the `[tddft]` block of the input deck
 |---|---|---|---|
 | `davidson_tol` | f64 | 1.0e-10 | Davidson convergence threshold: residual norm $\|r\| < \sqrt{\varepsilon}$ and energy change between iterations $|\Delta E| < \varepsilon$ |
 | `davidson_max_iter` | usize | 50 | Maximum Davidson iterations |
-| `davidson_max_subspace` | usize | 60 | Maximum subspace dimension multiplier (subspace dimension = `nroots × davidson_max_subspace`). Full LR needs a large enough subspace to converge before the first restart; avoid shrinking it |
+| `davidson_max_subspace` | usize | 60 | Maximum subspace capacity (actual subspace dimension = `max(4 × nroots, davidson_max_subspace)`, truncated to the excitation-space dimension). Full LR needs a large enough subspace to converge before the first restart; avoid shrinking it |
 
 ### AO-mode advanced options
 
@@ -113,7 +113,7 @@ When `response_tddft = true`, the following keywords generate the spatial sampli
 | `response_tddft_z_end` | f64 | 1.0 | Z end coordinate (Bohr) |
 | `response_tddft_z_points` | usize | 2 | Number of Z sampling points |
 
-NOTE: the sampling points are generated with X as the outer, Y the middle, and Z the inner loop. Directions with ≤ 1 points are not sampled.
+NOTE: the sampling points are generated with X as the outer, Y the middle, and Z the inner loop. A direction with 0 points contributes no samples; a direction with 1 point contributes a single sample (the step is set to 0).
 
 ### FEAST solver settings
 
@@ -203,9 +203,9 @@ In a gradient task (`jobtype = force`), the program solves the TDDFT first and t
      nroots =                    6
 ```
 
-The unrestricted output covers both spin channels (e.g. `#3a->#5b` means an excitation from α orbital 3 to β orbital 5), with post-processing conventions matching PySCF's UHF-TDDFT.
+The unrestricted output covers both spin channels (e.g. `#3a->5a` means an α-channel excitation from orbital 3 to orbital 5; the `a`/`b` suffix marks the spin channel and is identical on both ends), with post-processing conventions matching PySCF's UHF-TDDFT.
 
 ## Notes
 
-- **Solver selection**: for small systems (restricted excitation space dim ≤ 15; unrestricted MO mode TDA ≤ 15, Full LR ≤ 80) the program automatically uses dense diagonalization (full LR diagonalizes the non-Hermitian $[\mathbf{A}\ \mathbf{B}; -\mathbf{B}\ -\mathbf{A}]$ directly); for medium and larger systems the Davidson iterative solver is the default (batched interface in AO mode); the FEAST solver is available for specific energy windows (restricted references + MO mode only).
+- **Solver selection**: for small systems (restricted excitation space dim ≤ 15; unrestricted MO mode TDA ≤ 15, Full LR ≤ 80) the program automatically uses dense diagonalization (restricted full LR first attempts the symmetrized $(\mathbf{A}-\mathbf{B})$ Casida reduction and falls back to diagonalizing $\mathbf{A}$ alone when $\mathbf{A}-\mathbf{B}$ is not positive definite; unrestricted full LR diagonalizes the non-Hermitian $[\mathbf{A}\ \mathbf{B}; -\mathbf{B}\ -\mathbf{A}]$ directly); for medium and larger systems the Davidson iterative solver is the default (batched interface in AO mode); the FEAST solver is available for specific energy windows (restricted references + MO mode only).
 - **Singlet/triplet excitations**: controlled by `tddft_spin` for restricted references; triplets and `"both"` require `tddft_mode = "ao"`. Unrestricted references have a single spin-coupled channel and do not accept `tddft_spin`.

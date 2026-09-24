@@ -55,7 +55,7 @@ REST 的 TDDFT 模块提供两种计算模式：
 |---|---|---|---|
 | `davidson_tol` | f64 | 1.0e-10 | Davidson 迭代收敛阈值：残差范数 $\|r\| < \sqrt{\varepsilon}$ 且相邻迭代能量变化 $|\Delta E| < \varepsilon$ |
 | `davidson_max_iter` | usize | 50 | Davidson 最大迭代次数 |
-| `davidson_max_subspace` | usize | 60 | 最大子空间维度乘数 (子空间维度 = `nroots × davidson_max_subspace`)。Full LR 求解需要足够大的子空间以在首次重启前收敛，不建议调小 |
+| `davidson_max_subspace` | usize | 60 | 子空间容量上限（实际子空间维度 = `max(4 × nroots, davidson_max_subspace)`，并以激发空间维度截断）。Full LR 求解需要足够大的子空间以在首次重启前收敛，不建议调小 |
 
 ### AO 模式高级选项
 
@@ -113,7 +113,7 @@ SCF 波函数稳定性分析的关键字 (`stability`/`stability_nroots`/`stabil
 | `response_tddft_z_end` | f64 | 1.0 | Z 方向终止坐标 (Bohr) |
 | `response_tddft_z_points` | usize | 2 | Z 方向采样点数 |
 
-NOTE: 采样格点按外循环 X、中循环 Y、内循环 Z 的顺序生成。当某方向点数 ≤1 时不实际采样。
+NOTE: 采样格点按外循环 X、中循环 Y、内循环 Z 的顺序生成。某方向点数为 0 时不产生采样点；点数为 1 时仅产生一个采样点（步长置 0）。
 
 ### FEAST 求解器设置
 
@@ -203,9 +203,9 @@ NOTE: 采样格点按外循环 X、中循环 Y、内循环 Z 的顺序生成。�
      nroots =                    6
 ```
 
-非限制计算输出 α/β 两个自旋通道的激发（如 `#3a->#5b` 表示 α 轨道 3 到 β 轨道 5 的激发），激发能/振子强度的后处理约定与 PySCF UHF-TDDFT 一致。
+非限制计算输出 α/β 两个自旋通道的激发（如 `#3a->5a` 表示 α 通道轨道 3 到 5 的激发；自旋通道由 `a`/`b` 后缀标记，两端后缀相同），激发能/振子强度的后处理约定与 PySCF UHF-TDDFT 一致。
 
 ## 注意事项
 
-- **求解器选择**：对小型体系 (限制性参考激发空间维度 ≤15；非限制 MO 模式 TDA ≤15、Full LR ≤80)，程序自动使用稠密对角化 (Full LR 为非厄米 $[\mathbf{A}\ \mathbf{B}; -\mathbf{B}\ -\mathbf{A}]$ 直接对角化)；中等以上体系默认使用 Davidson 迭代求解器 (AO 模式为批量接口)；特定能量窗口计算可启用 FEAST 求解器（仅限制性 + MO 模式）。
+- **求解器选择**：对小型体系 (限制性参考激发空间维度 ≤15；非限制 MO 模式 TDA ≤15、Full LR ≤80)，程序自动使用稠密对角化 (限制性 Full LR 先尝试 $(\mathbf{A}-\mathbf{B})$ 对称化 Casida 约化，若 $\mathbf{A}-\mathbf{B}$ 非正定则回退为仅对角化 $\mathbf{A}$；非限制 Full LR 则直接对角化非厄米 $[\mathbf{A}\ \mathbf{B}; -\mathbf{B}\ -\mathbf{A}]$)；中等以上体系默认使用 Davidson 迭代求解器 (AO 模式为批量接口)；特定能量窗口计算可启用 FEAST 求解器（仅限制性 + MO 模式）。
 - **单重/三重激发**：限制性参考通过 `tddft_spin` 控制；三重态与 `"both"` 需要 `tddft_mode = "ao"`。非限制参考只有单一自旋耦合通道，不接受 `tddft_spin`。

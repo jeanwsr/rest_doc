@@ -86,7 +86,7 @@ $$
 
 ### 非限制参考 (UTDDFT)
 
-非限制 (UHF/UKS) 参考的响应只有**单一**自旋耦合通道：激发空间为 α、β 两扇区占据→虚轨道旋转的拼接 $[z_\alpha; z_\beta]$，两扇区通过自旋无关的库仑核耦合（$J[\sum_\tau z^\tau]$），不存在限制性形式中「因子 2 / 因子 0」的自旋适配对，因此 `tddft_spin` 不适用（显式给出即报错）。XC 核为自旋分辨核 $f_{\sigma_1\sigma_2}[g,\alpha,\beta]$（无单重/三重因子），MO 模式存于 `fxc_u` (spin-resolved `FXCMatvecDataUnrestricted`)，AO 模式存于自旋极化的 `fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]`。轨道窗口 (`tddft_cutoff_energy`、冻结芯) 在 α/β 通道独立解析（`tddft_occupation_parameters_u`）；空扇区 (如 β 无占据) 以零维扇区参与。振幅后处理 (跃迁偶极、振子强度、主导跃迁打印) 遵循 PySCF `uhf.py` 约定。
+非限制 (UHF/UKS) 参考的响应只有**单一**自旋耦合通道：激发空间为 α、β 两扇区占据→虚轨道旋转的拼接 $[z_\alpha; z_\beta]$，两扇区通过自旋无关的库仑核耦合（$J[\sum_\tau z^\tau]$），不存在限制性形式中「因子 2 / 因子 0」的自旋适配对，因此 `tddft_spin` 不适用（显式给出即报错）。XC 核为自旋分辨核 $f_{\sigma_1\sigma_2}[g,\alpha,\beta]$（无单重/三重因子），MO 模式存于 `fxc_u` (spin-resolved `FXCMatvecDataUnrestricted`)，AO 模式存于自旋极化的 `fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]`。虚轨道截断 (`tddft_cutoff_energy`) 在 α/β 通道独立解析（`tddft_occupation_parameters_u`）；冻结芯（`mol.start_mo`，由 `frozen_core_postscf` 控制）为两通道共享；空扇区 (如 β 无占据) 以零维扇区参与。振幅后处理 (跃迁偶极、振子强度、主导跃迁打印) 遵循 PySCF `uhf.py` 约定。
 
 MO 模式与 AO 模式均支持非限制参考。求解器分层与限制性情形相同，稠密对角化阈值独立放宽：MO-U TDA $\dim \le 15$ (`dsyev`)、MO-U Full LR $\dim \le 80$ (直接构造非厄米 $[\mathbf{A}\ \mathbf{B};-\mathbf{B}\ -\mathbf{A}]$ 并以 `dgeev` 对角化)。
 
@@ -160,9 +160,10 @@ $$
 | `tddft_mode` | String | `"mo"` | `"mo"` (MO 基 RI 张量) 或 `"ao"` (AO 过渡密度核) |
 | `tddft_spin` | String | `"singlet"` | `"singlet"` / `"triplet"` / `"both"`；三重态与 both 仅 AO 模式、且仅限制性参考支持（非限制参考显式给出即报错） |
 | `nroots` | Integer | 6 | 求解的激发态数目 |
+| `tddft_use_optimized_fxc` | Bool | `true` | 是否使用 rayon 并行的 fxc 矩阵-矢量积核 |
 | `davidson_tol` | Float | `1e-10` | Davidson 收敛阈值：$\|r\| < \sqrt{\varepsilon}$ 且 $|\Delta E| < \varepsilon$ |
 | `davidson_max_iter` | Integer | 50 | Davidson 最大迭代次数 |
-| `davidson_max_subspace` | Integer | 60 | 最大子空间维度乘数 (Full LR 需要较大子空间在首次重启前收敛，不建议调小) |
+| `davidson_max_subspace` | Integer | 60 | 子空间容量上限（实际子空间维度 = `max(4 × nroots, davidson_max_subspace)`，并以激发空间维度截断；Full LR 需要较大子空间在首次重启前收敛，不建议调小） |
 | `grid_batch` | Bool | `true` | 仅 AO 模式：XC 核求值按格点分批，避免完整 AO-on-grid 张量常驻内存；MO 模式下忽略 |
 | `tddft_ao_rik_driver` | String | `"semitrans"` | 仅 AO 模式：交换 K 驱动方式——`"semitrans"` (占据侧半变换收缩，默认)、`"dm"` (精确批量)、`"lowrank"` (逐向量 SVD 低秩) |
 | `tddft_fxc_driver` | String | `"semitrans"` | 仅 AO 模式：fxc 驱动方式——`"semitrans"` (C_vir 折入振幅，虚轨道侧直接与格点裸 AO 收缩，无需形成 psi_vir) 或 `"mo"` (缓存占据侧格点投影 + 虚轨道侧流式，MO 模式 fxc 算法) 或 `"dm"` (组装密度 NIMatmul 回退路径；未知取值告警并回退到此) |
@@ -196,7 +197,7 @@ tddft_main(scf)
     ├── Step 2: 确定轨道扇区
     │   ├── 限制性: tddft_occupation_parameters() → (start_mo, occ_size, vir_size, dim)
     │   └── 非限制: tddft_occupation_parameters_u() → [α 扇区, β 扇区]
-    │       冻结芯 (< -2.0 Ha) 和虚轨道截断 (tddft_cutoff_energy) 在此处理
+    │       虚轨道截断 (tddft_cutoff_energy) 在此处理；冻结芯为 mol.start_mo (由 frozen_core_postscf 控制)
     │
     ├── Step 3: 生成初始猜测 + 对角预条件器
     │   └── build_hdiag() + generate_initial_guess() (来自 solvers/davidson)
