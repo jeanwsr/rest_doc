@@ -17,7 +17,7 @@
 
 函数路径：`ri_tddft::tddft::prepare_mo_data`
 
-构造 `TDDFTData`：调用 `prepare_fxc_data` (非限制参考为自旋分辨的 `prepare_fxc_data_unrestricted`，结果存 `fxc_u`) 得到 fxc 核表，并经 `tddft_get_submatrix` 从 `scf.rimatr` 抽取三个 MO 基 RI 子张量、按交换项的缩并需求重塑出另外三个。限制性参考为一组束，非限制参考为每自旋扇区一组 (存于 `TDDFTData.ri_terms: Vec<RITensorTerms>`)：
+构造 `TDDFTData`：调用 `prepare_fxc_data` (非限制参考为自旋分辨的 `prepare_fxc_data_unrestricted`，结果存 `fxc_u`) 得到 fxc 核，并经 `tddft_get_submatrix` 从 `scf.rimatr` 抽取三个 MO 基 RI 子张量、按交换项的缩并需求重塑出另外三个。限制性参考为一组束，非限制参考为每自旋扇区一组 (存于 `TDDFTData.ri_terms: Vec<RITensorTerms>`)：
 
 $$
 \begin{aligned}
@@ -32,7 +32,7 @@ $$
 | `vv_exch` | $B_{ab, P}$ | $(P a, b)$ | $(n_\mathrm{aux} n_\mathrm{vir}, n_\mathrm{vir})$ | A 块交换用 |
 | `ov_exch` | $B_{ia, P}$ | $(P i, a)$ | $(n_\mathrm{aux} n_\mathrm{occ}, n_\mathrm{vir})$ | B 块交换用 |
 | `oo_sr`/`vv_sr`/`ov_sr` | $B^{\mathrm{SR}}_{\cdots, P}$ | 同上 | 同上 | 仅 RSH：短程 $\mathrm{erfc}(\omega r_{12})/r_{12}$ 交换三元组，$|c_{SR}-c_{LR}| > 10^{-12}$ 时才构建 |
-| `fxc` (TDDFTData) | `FXCMatvecData` | — | 见下文 | XC 核表 (singlet)；非限制为 `fxc_u`；HF 参考为 `None` (无核，J/K only) |
+| `fxc` (TDDFTData) | `FXCMatvecData` | — | 见下文 | XC 核 (singlet)；非限制为 `fxc_u`；HF 参考为 `None` (无核，J/K only) |
 
 交换混合系数不在数据准备阶段存储：每次矩阵-矢量积时由 `scf.mol.xc_data` 现场导出 (RSH → $(c_{LR},\, c_{SR}-c_{LR})$；普通杂化 → $(c_x, 0)$)，见 [index](index.md) 的「范围分离杂化」一节。
 
@@ -85,11 +85,11 @@ $$
 
 与 A 块的差异：无对角项；Coulomb 项复用 `coulomb` 的同一缩并；交换项的指标排序不同，由 `ov_exch` (RSH 另加 `ov_sr`) 配合转置振幅完成。
 
-## fxc 核表与 `FXCMatvecData`
+## fxc 核与 `FXCMatvecData`
 
 函数路径：`dft::num_int::prepare_fxc_data` / `dft::num_int::fxc_matvec`
 
-MO 模式的 XC 核以「MO 轨道值 × 核表」的方式施加。`prepare_fxc_data` 在格点上求出基态密度、调用 libxc 得到二阶核，并预先将占据/虚轨道投影到格点上：
+MO 模式的 XC 核以「MO 轨道值 × XC 核」的方式施加。`prepare_fxc_data` 在格点上求出基态密度、调用 libxc 得到二阶核，并预先将占据/虚轨道投影到格点上：
 
 | 成员 (`FXCMatvecData`) | 意义 | 维度大小 | 其他说明 |
 |--|--|--|--|
@@ -99,7 +99,7 @@ MO 模式的 XC 核以「MO 轨道值 × 核表」的方式施加。`prepare_fxc
 | `mo_occ` | $\varphi_i(g)$ | $(n_\mathrm{occ}, n_\mathrm{grid})$ | |
 | `mo_vir` | $\varphi_a(g)$ | $(n_\mathrm{vir}, n_\mathrm{grid})$ | |
 | `mo_occ_grad` / `mo_vir_grad` | $\nabla\varphi(g)$ | 各 $(n_\mathrm{occ/vir}, n_\mathrm{grid})\times 3$ | 仅 GGA |
-| `wfxc` | 核表 $w(g) f_{\alpha\beta}^{\mathrm{xc}}(g)$ | $n_\mathrm{grid} n_\mathrm{var}^2$ | f 连续，$g + \alpha n_\mathrm{grid} + \beta \cdot 4 n_\mathrm{grid}$ |
+| `wfxc` | XC 核 $w(g) f_{\alpha\beta}^{\mathrm{xc}}(g)$ | $n_\mathrm{grid} n_\mathrm{var}^2$ | f 连续，$g + \alpha n_\mathrm{grid} + \beta \cdot 4 n_\mathrm{grid}$ |
 
 核施加的数学形式（以 LDA 为例）：
 
@@ -114,7 +114,7 @@ K^\mathbb{A}_{ia} &= \sum_g \varphi_i(g)\, v^{\mathbb{A}}(g)\, \varphi_a(g)
 \end{aligned}
 $$
 
-自旋通道：MO 模式的 `wfxc` 表由 `tddft_main` 的 `run_spin` 按通道准备——单重态核 $f_s = 2 f_u$（`SINGLET_FXC_FACTOR`）；非极化 ('R') 响应使用裸核 $f_u$（因子 1）。**三重态在 MO 模式不受支持**——`tddft_main` 会直接报错，请使用 AO 模式（见 [tddft-ao](tddft-ao.md)）。非限制参考使用自旋分辨核表 `fxc_u: FXCMatvecDataUnrestricted`（每格点存 $f_{\sigma_1\sigma_2}$，无单重/三重因子；见 [index](index.md) 的「非限制参考」）。
+自旋通道：MO 模式的 `wfxc` 表由 `tddft_main` 的 `run_spin` 按通道准备——单重态核 $f_s = 2 f_u$（`SINGLET_FXC_FACTOR`）；非极化 ('R') 响应使用裸核 $f_u$（因子 1）。**三重态在 MO 模式不受支持**——`tddft_main` 会直接报错，请使用 AO 模式（见 [tddft-ao](tddft-ao.md)）。非限制参考使用自旋分辨 XC 核 `fxc_u: FXCMatvecDataUnrestricted`（每格点存 $f_{\sigma_1\sigma_2}$，无单重/三重因子；见 [index](index.md) 的「非限制参考」）。
 
 ## 求解器接口
 

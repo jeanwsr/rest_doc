@@ -23,7 +23,7 @@ Builds the AO-mode `TDDFTData`. The MO-specific members (`fxc`, `fxc_u`, `ri_ter
 | `c_occ` | $C_{\mu i}$ | $(n_\mathrm{basis}, n_\mathrm{occ})$ | per sector; empty sectors (occ = 0) carry zero-column matrices |
 | `c_vir` | $C_{\mu a}$ | $(n_\mathrm{basis}, n_\mathrm{vir})$ | per sector |
 | `ni` | `NIMatmul` numerical integrator | — | libcint AO cache; real grid weights |
-| `fxc_eff` | raw kernel table (singlet factor included) | restricted $(n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{var})$; unrestricted $(n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2)$ | weights not multiplied; see below |
+| `fxc_eff` | raw XC kernel (singlet factor included) | restricted $(n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{var})$; unrestricted $(n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2)$ | weights not multiplied; see below |
 | `den_type` | `RHO` / `SIGMA` | — | determines $n_\mathrm{var}$ |
 | `grid_batch` | grid-batching switch | — | |
 | `fxc_driver` | `Option<FxcDriver>` | — | one of `"mo"`/`"semitrans"`/`"dm"`; `None` only for an HF reference (no kernel, J/K only) |
@@ -150,7 +150,7 @@ K^{\mathbb{A}}_{ia} &= \sum_{\mu\nu} C_{\mu i}\, F_{\mu\nu}^{\mathbb{A}}\, C_{\n
 \end{aligned}
 $$
 
-eq.1 outputs $[n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{set}]$ and eq.2 outputs $[n_\mathrm{basis}, n_\mathrm{basis}, n_\mathrm{set}]$ (symmetrized internally); both run over all $n_\mathrm{set}$ vectors at once. Coulomb and exchange are flop-bound contractions and remain per-vector calls; the fxc contraction is memory/bandwidth-bound on the grid, and batching means the grid AO values and the kernel table are read only once.
+eq.1 outputs $[n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{set}]$ and eq.2 outputs $[n_\mathrm{basis}, n_\mathrm{basis}, n_\mathrm{set}]$ (symmetrized internally); both run over all $n_\mathrm{set}$ vectors at once. Coulomb and exchange are flop-bound contractions and remain per-vector calls; the fxc contraction is memory/bandwidth-bound on the grid, and batching means the grid AO values and the XC kernel are read only once.
 
 **fxc driver selection** `tddft_fxc_driver` (AO mode only, default `"semitrans"`; `"dm"` is the eq.1–3 path above):
 
@@ -226,7 +226,7 @@ The batch size is `NIMatmul.nbatch` (default $1536 \times n_\mathrm{thread}$); t
 | fixed | AO value cache | $(g, \mu, c)$ | $n_\mathrm{grid} n_\mathrm{basis} n_\mathrm{comp}$ / $n_\mathrm{batch} n_\mathrm{basis} n_\mathrm{comp}$ | $c$ = density components (1/4) |
 | batched | eq.1 output | $(\underline g, \alpha, \mathbb{A})$ | $n_\mathrm{batch} n_\mathrm{var} n_\mathrm{set}$ | |
 | batched | eq.2 output | $(\mu, \nu, \mathbb{A})$ | $n_\mathrm{basis}^2 n_\mathrm{set}$ | |
-| fixed | kernel table $f^{\mathrm{xc}}_{\alpha\beta}(g)$ | $(g, \alpha, \beta)$ | $n_\mathrm{grid} n_\mathrm{var}^2$ | same in both modes |
+| fixed | XC kernel $f^{\mathrm{xc}}_{\alpha\beta}(g)$ | $(g, \alpha, \beta)$ | $n_\mathrm{grid} n_\mathrm{var}^2$ | same in both modes |
 | fixed | `out` | $(\mu, \nu, \mathbb{A})$ | $n_\mathrm{basis}^2 n_\mathrm{set}$ | |
 
 ## Dense small-system path: `build_a_ao` / `build_b_ao`
