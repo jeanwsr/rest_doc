@@ -17,7 +17,7 @@ Underlined subscripts denote indices that are batched during evaluation.
 
 Function path: `ri_tddft::tddft::prepare_mo_data`
 
-Builds the `TDDFTData`: it calls `prepare_fxc_data` (or the spin-resolved `prepare_fxc_data_unrestricted` for an unrestricted reference, stored as `fxc_u`) for the fxc kernel table, and extracts three MO-basis RI submatrices from `scf.rimatr` via `tddft_get_submatrix`, reshaping three further tensors as required by the exchange contractions. A restricted reference carries one bundle; an unrestricted reference carries one per spin sector (stored in `TDDFTData.ri_terms: Vec<RITensorTerms>`):
+Builds the `TDDFTData`: it calls `prepare_fxc_data` (or the spin-resolved `prepare_fxc_data_unrestricted` for an unrestricted reference, stored as `fxc_u`) for the fxc kernel, and extracts three MO-basis RI submatrices from `scf.rimatr` via `tddft_get_submatrix`, reshaping three further tensors as required by the exchange contractions. A restricted reference carries one bundle; an unrestricted reference carries one per spin sector (stored in `TDDFTData.ri_terms: Vec<RITensorTerms>`):
 
 $$
 \begin{aligned}
@@ -32,7 +32,7 @@ $$
 | `vv_exch` | $B_{ab, P}$ | $(P a, b)$ | $(n_\mathrm{aux} n_\mathrm{vir}, n_\mathrm{vir})$ | A-block exchange |
 | `ov_exch` | $B_{ia, P}$ | $(P i, a)$ | $(n_\mathrm{aux} n_\mathrm{occ}, n_\mathrm{vir})$ | B-block exchange |
 | `oo_sr`/`vv_sr`/`ov_sr` | $B^{\mathrm{SR}}_{\cdots, P}$ | as above | as above | RSH only: the short-range $\mathrm{erfc}(\omega r_{12})/r_{12}$ exchange triple, built only when $|c_{SR}-c_{LR}| > 10^{-12}$ |
-| `fxc` (TDDFTData) | `FXCMatvecData` | — | see below | XC kernel table (singlet); `fxc_u` for unrestricted; `None` for an HF reference (no kernel, J/K only) |
+| `fxc` (TDDFTData) | `FXCMatvecData` | — | see below | XC kernel (singlet); `fxc_u` for unrestricted; `None` for an HF reference (no kernel, J/K only) |
 
 The exchange mixing coefficients are not stored at data-preparation time: they are derived per matrix-vector product from `scf.mol.xc_data` (RSH → $(c_{LR},\, c_{SR}-c_{LR})$; ordinary hybrids → $(c_x, 0)$); see "Range-separated hybrids" in [index](index.md).
 
@@ -85,11 +85,11 @@ $$
 
 Differences from the A block: no diagonal term; the Coulomb part reuses the same `coulomb` contraction; the exchange index ordering is realized through `ov_exch` (plus `ov_sr` for RSH) with the transposed amplitude.
 
-## fxc kernel table and `FXCMatvecData`
+## fxc kernel and `FXCMatvecData`
 
 Function path: `dft::num_int::prepare_fxc_data` / `dft::num_int::fxc_matvec`
 
-In MO mode the XC kernel is applied as "MO values on grid × kernel table". `prepare_fxc_data` evaluates the ground-state density on the grid, calls libxc for the second-order kernel, and pre-projects the occupied/virtual orbitals onto the grid:
+In MO mode the XC kernel is applied as "MO values on grid × XC kernel". `prepare_fxc_data` evaluates the ground-state density on the grid, calls libxc for the second-order kernel, and pre-projects the occupied/virtual orbitals onto the grid:
 
 | Member (`FXCMatvecData`) | Meaning | Dimensions | Remarks |
 |--|--|--|--|
@@ -99,7 +99,7 @@ In MO mode the XC kernel is applied as "MO values on grid × kernel table". `pre
 | `mo_occ` | $\varphi_i(g)$ | $(n_\mathrm{occ}, n_\mathrm{grid})$ | |
 | `mo_vir` | $\varphi_a(g)$ | $(n_\mathrm{vir}, n_\mathrm{grid})$ | |
 | `mo_occ_grad` / `mo_vir_grad` | $\nabla\varphi(g)$ | $(n_\mathrm{occ/vir}, n_\mathrm{grid})\times 3$ | GGA only |
-| `wfxc` | kernel table $w(g) f_{\alpha\beta}^{\mathrm{xc}}(g)$ | $n_\mathrm{grid} n_\mathrm{var}^2$ | f-contiguous, $g + \alpha n_\mathrm{grid} + \beta \cdot 4 n_\mathrm{grid}$ |
+| `wfxc` | XC kernel $w(g) f_{\alpha\beta}^{\mathrm{xc}}(g)$ | $n_\mathrm{grid} n_\mathrm{var}^2$ | f-contiguous, $g + \alpha n_\mathrm{grid} + \beta \cdot 4 n_\mathrm{grid}$ |
 
 The kernel application (LDA shown for clarity):
 

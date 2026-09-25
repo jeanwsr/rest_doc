@@ -1,6 +1,6 @@
 # libxc 接口
 
-REST 使用外部 crate [`libxc-rs`](https://github.com/RESTGroup/libxc-rs)（[docs.rs](https://docs.rs/libxc/latest/libxc/)）作为 libxc C 库的安全 Rust 封装。通过 Cargo feature `dynamic_loading` 在运行时动态链接，无需编译时静态链接。
+REST 使用外部 crate [`libxc-rs`](https://github.com/RESTGroup/libxc-rs)（[docs.rs](https://docs.rs/libxc/latest/libxc/)）作为 libxc C 库的安全 Rust 封装。通过 Cargo feature `dynamic_loading` 在运行时动态加载，无需编译时静态链接。
 
 ## 架构
 

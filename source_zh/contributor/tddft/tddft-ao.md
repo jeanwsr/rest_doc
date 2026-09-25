@@ -1,4 +1,4 @@
-# TDDFT AO 模式：过渡密度核
+# TDDFT AO 模式：跃迁密度核
 
 本页描述 `tddft_mode = "ao"` 下的矩阵-矢量积实现。记号沿用 [ri-jk 文档](../ri-jk/index.md)与 [tddft-mo](tddft-mo.md) 的约定：$\mu\nu$ 为原子轨道指标，$i,j$ 占据 MO，$a,b$ 虚轨道，$P$ 辅助基，$g$ 格点，$\alpha,\beta$ 密度变量分量，$\mathbb{A}$ 为试探向量集合指标，下划线角标 (如 $\underline{g}$) 表示分批指标。
 
@@ -7,7 +7,7 @@
 MO 模式需要预先存储三个 MO 基 RI 张量，总量为 $n_\mathrm{aux}(n_\mathrm{occ}n_\mathrm{vir} + n_\mathrm{occ}^2 + n_\mathrm{vir}^2)$；当 $n_\mathrm{occ}, n_\mathrm{vir} \gg n_\mathrm{basis}$ 时远超 AO 基的 $n_\mathrm{aux} n_\mathrm{basis}^2$（即 `scf.rimatr`），且 MO 变换本身是一次性的大 DGEMM。AO 模式的策略是：
 
 - Davidson 迭代仍停留在 MO 振幅空间（子空间规模小）；
-- 每次矩阵-矢量积，将整块试探向量变换为 **AO 过渡密度** $P_{\mu\nu}^{\mathbb{A}}$；
+- 每次矩阵-矢量积，将整块试探向量变换为 **AO 跃迁密度** $P_{\mu\nu}^{\mathbb{A}}$；
 - 库仑与交换项直接调用 `ri_jk` 的密度驱动接口（复用 SCF 已有的 `scf.rimatr`，无新的大张量）；
 - XC 核通过 `dft::numint_matmul::NIMatmul` 在数值格点上对整块试探向量一次性批量求值（借鉴 PySCF `_gen_tda_operation` 的 `vind(zs)` 设计）；
 - 结果经 MO 系数收缩回振幅空间。
@@ -23,7 +23,7 @@ MO 模式需要预先存储三个 MO 基 RI 张量，总量为 $n_\mathrm{aux}(n
 | `c_occ` | $C_{\mu i}$ | $(n_\mathrm{basis}, n_\mathrm{occ})$ | 每扇区；空扇区 (occ = 0) 为零列矩阵 |
 | `c_vir` | $C_{\mu a}$ | $(n_\mathrm{basis}, n_\mathrm{vir})$ | 每扇区 |
 | `ni` | `NIMatmul` 数值积分器 | — | libcint AO 缓存；真实格点权重 |
-| `fxc_eff` | 原始核表（含单重态因子） | 限制性 $(n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{var})$；非限制 $(n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2)$ | 权重未乘，见下文 |
+| `fxc_eff` | 原始 XC 核（含单重态因子） | 限制性 $(n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{var})$；非限制 $(n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2)$ | 权重未乘，见下文 |
 | `den_type` | `RHO` / `SIGMA` | — | 决定 $n_\mathrm{var}$ |
 | `grid_batch` | 格点分批开关 | — | |
 | `fxc_driver` | `Option<FxcDriver>` | — | `"mo"`/`"semitrans"`/`"dm"` 之一；`None` 仅限 HF 参考 (无核，J/K only) |
@@ -35,7 +35,7 @@ MO 模式需要预先存储三个 MO 基 RI 张量，总量为 $n_\mathrm{aux}(n
 - **HF 参考**（无 libxc 组分）：`fxc_eff`/`ni`/`fxc_driver` 全为 `None`，矩阵-矢量积只跑 RI J/K 部分。这使 AO 模式 TDDFT 与稳定性分析对 HF 参考无需数值格点即可运行；
 - **RSH 泛函**：响应交换需要短程三中心积分 `scf.rimatr_sr`（由同泛函的 SCF 建立）；缺失时直接 panic 提示重跑 SCF。
 
-**核表约定**：`fxc_eff` 存储的是**未乘权重的原始核**（单重态因子 $\times 2$ 已含），而 `NIMatmul` 构造时使用真实格点权重并在 `make_fxc_pot_with_eff` 内部完成权重乘法。这与 MO 模式「`wfxc` 预乘权重」的约定不同，但两者给出的最终收缩在数学上等价。
+**XC 核约定**：`fxc_eff` 存储的是**未乘权重的原始核**（单重态因子 $\times 2$ 已含），而 `NIMatmul` 构造时使用真实格点权重并在 `make_fxc_pot_with_eff` 内部完成权重乘法。这与 MO 模式「`wfxc` 预乘权重」的约定不同，但两者给出的最终收缩在数学上等价。
 
 **自旋通道选择**（限制性参考由 `tddft_spin` 决定；`prepare_ao_data_with_spin` 的显式参数优先于输入卡）：
 
@@ -69,7 +69,7 @@ $$
 
 函数路径：`ri_tddft::matvec_ao::get_j_ao_batched`（内部调用 `ri_jk::pure_incore::get_vj_ri_incore_nonsym`）
 
-由于 $(\mu\nu|\kappa\lambda)$ 在 $(\kappa,\lambda)$ 交换下对称，库仑项只依赖过渡密度的对称部分。折叠后走 ri-jk incore 的标准压缩缩并（记号同 [ri-jk-incore](../ri-jk/ri-jk-incore.md) eq.1–4）：
+由于 $(\mu\nu|\kappa\lambda)$ 在 $(\kappa,\lambda)$ 交换下对称，库仑项只依赖跃迁密度的对称部分。折叠后走 ri-jk incore 的标准压缩缩并（记号同 [ri-jk-incore](../ri-jk/ri-jk-incore.md) eq.1–4）：
 
 $$
 \begin{aligned}
@@ -88,7 +88,7 @@ J_{\mu\nu}^{\mathbb{A}} &\bowtie J_{\mathrm{tp}(\mu\nu)}^{\mathbb{A}}
 \end{aligned}
 $$
 
-整块试探向量打包为 $[\mu, \nu, \mathbb{A}]$ 一次调用。与 SCF 的 `get_vj_ri_incore`（要求对称密度、折叠 $2D - \mathrm{diag}$）不同，`get_vj_ri_incore_nonsym` 的折叠以上式为准，适用于非对称过渡密度。
+整块试探向量打包为 $[\mu, \nu, \mathbb{A}]$ 一次调用。与 SCF 的 `get_vj_ri_incore`（要求对称密度、折叠 $2D - \mathrm{diag}$）不同，`get_vj_ri_incore_nonsym` 的折叠以上式为准，适用于非对称跃迁密度。
 
 ## 函数 `get_k_ao_batched`
 
@@ -107,11 +107,11 @@ $$
 
 | 取值 | 路径 | 说明 |
 |--|--|--|
-| `"semitrans"` (默认) | `get_vk_ri_incore_coeff_pair` | 占据侧半变换后收缩 (见下)，**精确**且 $O(n_\mathrm{occ})$ 复杂度 |
+| `"semitrans"` (默认) | `get_vk_ri_incore_coeff_pair` | 占据侧半转换后收缩 (见下)，**精确**且 $O(n_\mathrm{occ})$ 复杂度 |
 | `"dm"` | `get_vk_ri_incore_dm` | 精确、整块批量、逐辅助列密度驱动 |
 | `"lowrank"` | `get_vk_ri_incore_dm_lowrank` | 逐向量 SVD 低秩分解 (阈值 `tddft_svd_tol`)，有损近似 |
 
-**`"semitrans"` 驱动**：振幅先折叠进占据侧系数（仅一侧变换到 MO 基，"半变换"），过渡密度按结构精确分解 (秩 $\le n_\mathrm{occ}$，无需 SVD)：
+**`"semitrans"` 驱动**：振幅先折叠进占据侧系数（仅一侧变换到 MO 基，"半转换"），跃迁密度按结构精确分解 (秩 $\le n_\mathrm{occ}$，无需 SVD)：
 
 $$
 \begin{aligned}
@@ -122,7 +122,7 @@ K_{\mu\nu}^{\mathbb{A}} &= \sum_{\underline{P},\,i} \bigl(M_{\underline{P}}\, C\
 \end{aligned}
 $$
 
-eq.2 的右半变换 $M_{\underline{P}} C_{occ}$ 每批只算一次、跨全部试探向量复用。由于 $M_{\underline{P}}$ 对称，$K[P^{\mathrm{T}}] = K[P]^{\mathrm{T}}$：B 块直接取转置，两侧都保持 $k = n_\mathrm{occ}$。交换计算量从 $O(n_\mathrm{aux} n_\mathrm{basis}^3)$ 降为 $O(n_\mathrm{aux} n_\mathrm{basis}^2 n_\mathrm{occ})$。实测 (C6H6/PBE0 TDA, 4 线程)：DZ 70.4 → 62.9 s (−11%)，TZ 400.1 → 286.6 s (−28%) 且峰值内存省约 230 MB；能量与 `"dm"` 一致 ($\sim 10^{-14}$ Ha)。
+eq.2 的右半转换 $M_{\underline{P}} C_{occ}$ 每批只算一次、跨全部试探向量复用。由于 $M_{\underline{P}}$ 对称，$K[P^{\mathrm{T}}] = K[P]^{\mathrm{T}}$：B 块直接取转置，两侧都保持 $k = n_\mathrm{occ}$。交换计算量从 $O(n_\mathrm{aux} n_\mathrm{basis}^3)$ 降为 $O(n_\mathrm{aux} n_\mathrm{basis}^2 n_\mathrm{occ})$。实测 (C6H6/PBE0 TDA, 4 线程)：DZ 70.4 → 62.9 s (−11%)，TZ 400.1 → 286.6 s (−28%) 且峰值内存省约 230 MB；能量与 `"dm"` 一致 ($\sim 10^{-14}$ Ha)。
 
 **`"lowrank"` 驱动** `get_vk_ri_incore_dm_lowrank`（阈值 `tddft_svd_tol`，默认 1e-6）：
 
@@ -131,13 +131,13 @@ z^{\mathbb{A}} = U \Sigma V^{\mathrm{T}} \qquad
 k = \#\{\, \sigma_i \;\ge\; \varepsilon_{\mathrm{svd}}\, \sigma_{\max} \,\}
 $$
 
-交换计算量 $O(n_\mathrm{aux} n_\mathrm{basis}^2 k)$。注意这是**有损近似**：对典型体系 (如苯/def2-SVP) 试探向量矩阵接近满秩，低秩分解不带来加速；仅当过渡密度 genuinely 低秩时有益。一般场景建议用精确的 `"semitrans"` 驱动替代。
+交换计算量 $O(n_\mathrm{aux} n_\mathrm{basis}^2 k)$。注意这是**有损近似**：对典型体系 (如苯/def2-SVP) 试探向量矩阵接近满秩，低秩分解不带来加速；仅当跃迁密度 genuinely 低秩时有益。一般场景建议用精确的 `"semitrans"` 驱动替代。
 
 ## 函数 `fxc_matvec_ao_batched`
 
 函数路径：`ri_tddft::matvec_ao::fxc_matvec_ao_batched`
 
-对整块试探向量一次性完成 XC 核施加（PySCF `vind(zs)` 风格）。过渡密度先对称化 $P^{\mathrm{sym}} = (P + P^{\mathrm{T}})/2$（`make_rho_from_dm` 的 SIGMA 响应假定对称密度；核响应在 $\mu \leftrightarrow \nu$ 对称化下不变，故为精确操作），随后：
+对整块试探向量一次性完成 XC 核施加（PySCF `vind(zs)` 风格）。跃迁密度先对称化 $P^{\mathrm{sym}} = (P + P^{\mathrm{T}})/2$（`make_rho_from_dm` 的 SIGMA 响应假定对称密度；核响应在 $\mu \leftrightarrow \nu$ 对称化下不变，故为精确操作），随后：
 
 $$
 \begin{aligned}
@@ -150,14 +150,14 @@ K^{\mathbb{A}}_{ia} &= \sum_{\mu\nu} C_{\mu i}\, F_{\mu\nu}^{\mathbb{A}}\, C_{\n
 \end{aligned}
 $$
 
-eq.1 的输出为 $[n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{set}]$，eq.2 的输出为 $[n_\mathrm{basis}, n_\mathrm{basis}, n_\mathrm{set}]$（内部已对称化），两步都对整块 $n_\mathrm{set}$ 向量一次完成。库仑与交换是浮点量受限 (flop-bound) 的缩并，保持逐向量调用；fxc 是内存/带宽受限的格点收缩，批量化后格点 AO 值与核表只读一次。
+eq.1 的输出为 $[n_\mathrm{grid}, n_\mathrm{var}, n_\mathrm{set}]$，eq.2 的输出为 $[n_\mathrm{basis}, n_\mathrm{basis}, n_\mathrm{set}]$（内部已对称化），两步都对整块 $n_\mathrm{set}$ 向量一次完成。库仑与交换是浮点量受限 (flop-bound) 的缩并，保持逐向量调用；fxc 是内存/带宽受限的格点收缩，批量化后格点 AO 值与 XC 核只读一次。
 
 **fxc 驱动方式选择** `tddft_fxc_driver`（仅 AO 模式，默认 `"semitrans"`；`"dm"` 即上面的 eq.1–3 路径）：
 
 | 取值 | 每次矩阵-矢量积的主导开销 | 内存开销 | 说明 |
 |--|--|--|--|
 | `"semitrans"` (默认) | $O(n_\mathrm{occ} n_\mathrm{basis} n_\mathrm{grid})$（振幅折入 $C_{vir}$ 后与裸 AO 收缩） | 仅 ψ_occ 表 $(1{+}3\delta_\mathrm{GGA}) n_\mathrm{occ} n_\mathrm{grid}$ | 见下 |
-| `"dm"` | $O(n_\mathrm{basis}^2 n_\mathrm{grid})$（组装 $[n_\mathrm{basis},n_\mathrm{basis},m]$ 过渡密度） | 无额外 | eq.1–3 路径 |
+| `"dm"` | $O(n_\mathrm{basis}^2 n_\mathrm{grid})$（组装 $[n_\mathrm{basis},n_\mathrm{basis},m]$ 跃迁密度） | 无额外 | eq.1–3 路径 |
 | `"mo"` | $O(n_\mathrm{occ} n_\mathrm{vir} n_\mathrm{grid})$ + ψ 表流量 | ψ 表 $(n_\mathrm{occ}{+}n_\mathrm{vir})(1{+}3\delta_\mathrm{GGA}) n_\mathrm{grid}$ | 见下 |
 
 **`"semitrans"` 驱动**（默认，实现于 `fxc_mo_matvec` 的 `st` 分支）：把 $C_{vir}$ **预先折叠进振幅**，使虚轨道侧在格点上直接与裸 AO 值收缩，全程不形成 ψ_vir 表：
@@ -175,7 +175,7 @@ E^{\mathbb{A}}_{ia} &= \sum_{\mu} C_{\mu a} \sum_g \varphi_\mu(g)\,\psi_i(g)\, v
 \end{aligned}
 $$
 
-与 `"mo"` 驱动共用同一实现框架 `fxc_mo_matvec`（仅占据侧 ψ 表缓存、格点分批 + rayon 分块），差别只在 GEMM 操作数：`"semitrans"` 的左操作数是裸 AO $[n_\mathrm{batch}, n_\mathrm{basis}]$、右操作数是折叠振幅 $[m\, n_\mathrm{occ}, n_\mathrm{basis}]$（每调用一次 eq.S1），回投时多一次 $[m\, n_\mathrm{occ}, n_\mathrm{basis}] \times C_{vir}$ GEMM；`"mo"` 的左操作数是按批投影的 ψ_vir、右操作数是原始振幅。UHF 下核收缩沿自旋分辨核表 $f[g,\alpha,\sigma_1,\beta,\sigma_2]$ 展开 (eq.S3 的 $\sigma$ 双循环)。未知取值告警并回退 `"dm"`。
+与 `"mo"` 驱动共用同一实现框架 `fxc_mo_matvec`（仅占据侧 ψ 表缓存、格点分批 + rayon 分块），差别只在 GEMM 操作数：`"semitrans"` 的左操作数是裸 AO $[n_\mathrm{batch}, n_\mathrm{basis}]$、右操作数是折叠振幅 $[m\, n_\mathrm{occ}, n_\mathrm{basis}]$（每调用一次 eq.S1），回投时多一次 $[m\, n_\mathrm{occ}, n_\mathrm{basis}] \times C_{vir}$ GEMM；`"mo"` 的左操作数是按批投影的 ψ_vir、右操作数是原始振幅。UHF 下核收缩沿自旋分辨 XC 核 $f[g,\alpha,\sigma_1,\beta,\sigma_2]$ 展开 (eq.S3 的 $\sigma$ 双循环)。未知取值告警并回退 `"dm"`。
 
 **`"mo"` 驱动**：即 MO 模式 fxc 算法的 AO 移植（数学上等价，仅实现不同）——`prepare_ao_data_with_spin` 以格点分批方式预先投影并缓存 occ/vir 的 MO-on-grid 表，每次矩阵-矢量积只在 occ/vir 空间收缩，与 MO 模式的 `fxc_matvec` 相同：
 
@@ -220,7 +220,7 @@ $$
 | fixed | AO 值缓存 | $(g, \mu, c)$ | $n_\mathrm{grid} n_\mathrm{basis} n_\mathrm{comp}$ / $n_\mathrm{batch} n_\mathrm{basis} n_\mathrm{comp}$ | $c$ 为密度分量数 (1/4) |
 | batched | eq.1 输出 | $(\underline g, \alpha, \mathbb{A})$ | $n_\mathrm{batch} n_\mathrm{var} n_\mathrm{set}$ | |
 | batched | eq.2 输出 | $(\mu, \nu, \mathbb{A})$ | $n_\mathrm{basis}^2 n_\mathrm{set}$ | |
-| fixed | $f^{\mathrm{xc}}_{\alpha\beta}(g)$ 核表 | $(g, \alpha, \beta)$ | $n_\mathrm{grid} n_\mathrm{var}^2$ | 两种模式相同 |
+| fixed | $f^{\mathrm{xc}}_{\alpha\beta}(g)$ XC 核 | $(g, \alpha, \beta)$ | $n_\mathrm{grid} n_\mathrm{var}^2$ | 两种模式相同 |
 | fixed | `out` | $(\mu, \nu, \mathbb{A})$ | $n_\mathrm{basis}^2 n_\mathrm{set}$ | |
 
 ## 稠密小系统路径：`build_a_ao` / `build_b_ao`
@@ -243,6 +243,6 @@ AO 模式的 Davidson 迭代使用批量接口 `solvers::davidson::davidson_solv
 FnMut(&MatrixFull<f64>) -> MatrixFull<f64>   // [dim, n_set] → [dim, n_set]
 ```
 
-求解器把整块试探向量交给闭包，闭包内部依次执行：过渡密度构造（一次 DGEMM 覆盖全部 $n_\mathrm{set}$ 列）→ 批量 J/K（单次 `ri_jk` 调用）→ 批量 fxc（单次 `make_rho_from_dm` + `make_fxc_pot_with_eff`）→ 收缩回 MO。并行性位于闭包内部（rayon），子空间迭代本身保持串行，避免嵌套线程池竞争。
+求解器把整块试探向量交给闭包，闭包内部依次执行：跃迁密度构造（一次 DGEMM 覆盖全部 $n_\mathrm{set}$ 列）→ 批量 J/K（单次 `ri_jk` 调用）→ 批量 fxc（单次 `make_rho_from_dm` + `make_fxc_pot_with_eff`）→ 收缩回 MO。并行性位于闭包内部（rayon），子空间迭代本身保持串行，避免嵌套线程池竞争。
 
 逐向量接口 `davidson_solver` / `lr_davidson_solver`（别名 `tda_davidson_solver`、供 `ri_bse`/`scf_io` 使用）是批量核心的逐列适配包装。

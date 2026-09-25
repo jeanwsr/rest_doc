@@ -26,7 +26,7 @@ REST 的 TDDFT 模块提供两种计算模式：
 | 取值 | 说明 |
 |---|---|
 | `"mo"` (默认) | 预先将三中心 RI 积分变换到 MO 基，矩阵-矢量积全部在 MO 振幅空间完成。成熟、经过广泛验证的路径 |
-| `"ao"` | Davidson 迭代仍在 MO 振幅空间，但每次矩阵-矢量积构造 AO 过渡密度，库仑/交换经 `ri_jk`、XC 核经数值格点批量计算。内存占用显著更低，且**三重态与 `tddft_spin = "both"` 仅在此模式支持** |
+| `"ao"` | Davidson 迭代仍在 MO 振幅空间，但每次矩阵-矢量积构造 AO 跃迁密度，库仑/交换经 `ri_jk`、XC 核经数值格点批量计算。内存占用显著更低，且**三重态与 `tddft_spin = "both"` 仅在此模式支持** |
 
 一般建议：常规单重态价激发计算用默认的 `"mo"` 模式；大体系（MO 基 RI 张量内存成为瓶颈）、三重态激发、以及 HF 参考的稳定性分析用 `"ao"` 模式。
 
@@ -43,7 +43,7 @@ REST 的 TDDFT 模块提供两种计算模式：
 | 关键字 | 类型 | 缺省值 | 说明 |
 |---|---|---|---|
 | `tddft_method` | String | `"lr"` | TDDFT 方法。`"tda"` 为 Tamm-Dancoff 近似，`"lr"` 为全线性响应 |
-| `tddft_mode` | String | `"mo"` | 内核实现模式。`"mo"` (MO 基 RI 张量) 或 `"ao"` (AO 过渡密度核) |
+| `tddft_mode` | String | `"mo"` | 内核实现模式。`"mo"` (MO 基 RI 张量) 或 `"ao"` (AO 跃迁密度核) |
 | `tddft_spin` | String | `"singlet"` | 自旋通道（仅限制性参考适用）。`"singlet"` 单重激发、`"triplet"` 三重激发（需 AO 模式）、`"both"` 单重+三重都算（需 AO 模式）。非限制参考 (`spin_polarization = true`) 下显式给出该关键字会报错 |
 | `nroots` | usize | 6 | 需计算的激发态数目 |
 | `tddft_use_optimized_fxc` | bool | true | 是否使用 rayon 并行的 fxc 矩阵-矢量积核 |
@@ -64,8 +64,8 @@ REST 的 TDDFT 模块提供两种计算模式：
 | 关键字 | 类型 | 缺省值 | 说明 |
 |---|---|---|---|
 | `grid_batch` | bool | true | XC 核求值按格点分批执行，避免完整 AO-on-grid 张量常驻内存。以少量时间开销换取约 40% 的峰值内存下降 |
-| `tddft_ao_rik_driver` | String | `"semitrans"` | 交换 K 的计算方式：`"semitrans"` 占据侧半变换收缩（精确，默认）；`"dm"` 精确批量密度驱动；`"lowrank"` 逐向量 SVD 低秩近似（阈值 `tddft_svd_tol`，一般不推荐） |
-| `tddft_fxc_driver` | String | `"semitrans"` | XC 核的计算方式：`"semitrans"` 将 $C_{vir}$ 折入振幅、虚轨道侧直接与格点裸 AO 收缩（默认）；`"mo"` 缓存占据侧格点投影 + 虚轨道侧流式（MO 模式 fxc 算法）；`"dm"` 组装过渡密度的 NIMatmul 回退路径 |
+| `tddft_ao_rik_driver` | String | `"semitrans"` | 交换 K 的计算方式：`"semitrans"` 占据侧半转换收缩（精确，默认）；`"dm"` 精确批量密度驱动；`"lowrank"` 逐向量 SVD 低秩近似（阈值 `tddft_svd_tol`，一般不推荐） |
+| `tddft_fxc_driver` | String | `"semitrans"` | XC 核的计算方式：`"semitrans"` 将 $C_{vir}$ 折入振幅、虚轨道侧直接与格点裸 AO 收缩（默认）；`"mo"` 缓存占据侧格点投影 + 虚轨道侧流式（MO 模式 fxc 算法）；`"dm"` 组装跃迁密度的 NIMatmul 回退路径 |
 | `tddft_svd_tol` | f64 | 1.0e-6 | `"lowrank"` K 驱动的相对奇异值阈值 |
 
 ### SCF 稳定性分析

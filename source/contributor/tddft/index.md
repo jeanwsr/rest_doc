@@ -205,7 +205,7 @@ tddft_main(scf)
     ├── Step 4: solve per spin channel (run_spin closure; data prepared per channel)
     │   ├── data preparation (per channel, spin-adapted kernels not shared):
     │   │   ├── MO mode: prepare_mo_data() → fxc/fxc_u table + per-sector MO-basis RI bundles (ri_terms)
-    │   │   └── AO mode: prepare_ao_data_with_spin(scf, Some(spin)) → c_occ/c_vir + NIMatmul + raw kernel table
+    │   │   └── AO mode: prepare_ao_data_with_spin(scf, Some(spin)) → c_occ/c_vir + NIMatmul + raw XC kernel
     │   │
     │   └── layered solver dispatch:
     │       ├── FEAST (restricted + MO only): feast_solve_tddft_tda/lr()
@@ -296,7 +296,7 @@ Input parameters are defined in `src/ctrl_io/tddft_parameters.rs`.
 |----------|------|
 | `scf_io::SCF` | core data: MO coefficients, KS orbital energies, RI integrals (`rimatr`, plus `rimatr_sr` for RSH), numerical grids, molecular information |
 | `dft::num_int` | `FXCMatvecData`/`FXCMatvecDataUnrestricted` (MO-mode XC kernel data) and `fxc_matvec()` (XC kernel matrix-vector product) |
-| `dft::numint_matmul` | AO-mode XC kernel: `NIMatmul` (grid AO cache, batched density construction and kernel contraction), `eval_vxc_fxc_from_rho` (raw kernel table) |
+| `dft::numint_matmul` | AO-mode XC kernel: `NIMatmul` (grid AO cache, batched density construction and kernel contraction), `eval_vxc_fxc_from_rho` (raw XC kernel) |
 | `dft::xceff` | libxc evaluation wrappers (`libxc_eval_eff`, `determine_den_type`); the triplet spin-polarized kernel is composed on top of these |
 | `ri_jk` | AO-mode J/K: `get_vj_ri_incore_nonsym`, `get_vk_ri_incore_dm`, `get_vk_ri_incore_dm_lowrank`, `get_vk_ri_incore_coeff_pair` (notation: the [ri documentation](../ri.md)) |
 | `ri_bse` | Coulomb contribution (`coulomb_contribution`), response-equation solvers (Pople/GMRES/Klopper, adapted from `ri_bse::response`), dipole tools (`dipoles::normalize` etc.), `pysoc_export` |

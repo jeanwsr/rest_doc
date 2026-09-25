@@ -13,7 +13,7 @@ REST 的 TDDFT 模块 (`src/ri_tddft/`) 实现了基于 RI 加速的线性响应
 模块支持两种内核实现模式，由输入关键字 `tddft_mode` 控制：
 
 - **MO 模式** (`tddft_mode = "mo"`，默认)：预先将三中心 RI 积分变换到 MO 基，矩阵-矢量积全部在 MO 振幅空间完成（见 [tddft-mo](tddft-mo.md)）；
-- **AO 模式** (`tddft_mode = "ao"`)：Davidson 迭代仍停留在 MO 振幅空间，但每次矩阵-矢量积时构造 AO 过渡密度，库仑与交换项通过 `ri_jk` 的密度驱动接口计算，XC 核通过 `dft::numint_matmul` 在数值格点上批量计算（见 [tddft-ao](tddft-ao.md)）。
+- **AO 模式** (`tddft_mode = "ao"`)：Davidson 迭代仍停留在 MO 振幅空间，但每次矩阵-矢量积时构造 AO 跃迁密度，库仑与交换项通过 `ri_jk` 的密度驱动接口计算，XC 核通过 `dft::numint_matmul` 在数值格点上批量计算（见 [tddft-ao](tddft-ao.md)）。
 
 两种模式共享同一数据结构 `TDDFTData` (`src/ri_tddft/tddft.rs`)：模式相关的成员以 `Option` 形式存在；非限制参考下每自旋扇区的成员 (`c_occ`/`c_vir`/`psi_occ`/`ri_terms` 等) 以 `Vec` (每扇区一项) 存储，扇区数由 `TDDFTData::n_sectors()` 给出 (RHF 为 1，UHF 为 2)。交换混合系数不存储在数据中，而是在每次矩阵-矢量积时由 `scf.mol.xc_data` 现场导出。
 
@@ -86,7 +86,7 @@ $$
 
 ### 非限制参考 (UTDDFT)
 
-非限制 (UHF/UKS) 参考的响应只有**单一**自旋耦合通道：激发空间为 α、β 两扇区占据→虚轨道旋转的拼接 $[z_\alpha; z_\beta]$，两扇区通过自旋无关的库仑核耦合（$J[\sum_\tau z^\tau]$），不存在限制性形式中「因子 2 / 因子 0」的自旋适配对，因此 `tddft_spin` 不适用（显式给出即报错）。XC 核为自旋分辨核 $f_{\sigma_1\sigma_2}[g,\alpha,\beta]$（无单重/三重因子），MO 模式存于 `fxc_u` (spin-resolved `FXCMatvecDataUnrestricted`)，AO 模式存于自旋极化的 `fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]`。虚轨道截断 (`tddft_cutoff_energy`) 在 α/β 通道独立解析（`tddft_occupation_parameters_u`）；冻结芯（`mol.start_mo`，由 `frozen_core_postscf` 控制）为两通道共享；空扇区 (如 β 无占据) 以零维扇区参与。振幅后处理 (跃迁偶极、振子强度、主导跃迁打印) 遵循 PySCF `uhf.py` 约定。
+非限制 (UHF/UKS) 参考的响应只有**单一**自旋耦合通道：激发空间为 α、β 两扇区占据→虚轨道旋转的拼接 $[z_\alpha; z_\beta]$，两扇区通过自旋无关的库仑核耦合（$J[\sum_\tau z^\tau]$），不存在限制性形式中「因子 2 / 因子 0」的自旋适配对，因此 `tddft_spin` 不适用（显式给出即报错）。XC 核为自旋分辨核 $f_{\sigma_1\sigma_2}[g,\alpha,\beta]$（无单重/三重因子），MO 模式存于 `fxc_u` (spin-resolved `FXCMatvecDataUnrestricted`)，AO 模式存于自旋极化的 `fxc_eff: [n_\mathrm{grid}, n_\mathrm{var}, 2, n_\mathrm{var}, 2]`。虚轨道截断 (`tddft_cutoff_energy`) 在 α/β 通道独立解析（`tddft_occupation_parameters_u`）；冻芯（`mol.start_mo`，由 `frozen_core_postscf` 控制）为两通道共享；空扇区 (如 β 无占据) 以零维扇区参与。振幅后处理 (跃迁偶极、振子强度、主导跃迁打印) 遵循 PySCF `uhf.py` 约定。
 
 MO 模式与 AO 模式均支持非限制参考。求解器分层与限制性情形相同，稠密对角化阈值独立放宽：MO-U TDA $\dim \le 15$ (`dsyev`)、MO-U Full LR $\dim \le 80$ (直接构造非厄米 $[\mathbf{A}\ \mathbf{B};-\mathbf{B}\ -\mathbf{A}]$ 并以 `dgeev` 对角化)。
 
@@ -157,7 +157,7 @@ $$
 | 关键字 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
 | `tddft_method` | String | `"lr"` | `"tda"` (Tamm-Dancoff 近似) 或 `"lr"` (全线性响应) |
-| `tddft_mode` | String | `"mo"` | `"mo"` (MO 基 RI 张量) 或 `"ao"` (AO 过渡密度核) |
+| `tddft_mode` | String | `"mo"` | `"mo"` (MO 基 RI 张量) 或 `"ao"` (AO 跃迁密度核) |
 | `tddft_spin` | String | `"singlet"` | `"singlet"` / `"triplet"` / `"both"`；三重态与 both 仅 AO 模式、且仅限制性参考支持（非限制参考显式给出即报错） |
 | `nroots` | Integer | 6 | 求解的激发态数目 |
 | `tddft_use_optimized_fxc` | Bool | `true` | 是否使用 rayon 并行的 fxc 矩阵-矢量积核 |
@@ -165,7 +165,7 @@ $$
 | `davidson_max_iter` | Integer | 50 | Davidson 最大迭代次数 |
 | `davidson_max_subspace` | Integer | 60 | 子空间容量上限（实际子空间维度 = `max(4 × nroots, davidson_max_subspace)`，并以激发空间维度截断；Full LR 需要较大子空间在首次重启前收敛，不建议调小） |
 | `grid_batch` | Bool | `true` | 仅 AO 模式：XC 核求值按格点分批，避免完整 AO-on-grid 张量常驻内存；MO 模式下忽略 |
-| `tddft_ao_rik_driver` | String | `"semitrans"` | 仅 AO 模式：交换 K 驱动方式——`"semitrans"` (占据侧半变换收缩，默认)、`"dm"` (精确批量)、`"lowrank"` (逐向量 SVD 低秩) |
+| `tddft_ao_rik_driver` | String | `"semitrans"` | 仅 AO 模式：交换 K 驱动方式——`"semitrans"` (占据侧半转换收缩，默认)、`"dm"` (精确批量)、`"lowrank"` (逐向量 SVD 低秩) |
 | `tddft_fxc_driver` | String | `"semitrans"` | 仅 AO 模式：fxc 驱动方式——`"semitrans"` (C_vir 折入振幅，虚轨道侧直接与格点裸 AO 收缩，无需形成 psi_vir) 或 `"mo"` (缓存占据侧格点投影 + 虚轨道侧流式，MO 模式 fxc 算法) 或 `"dm"` (组装密度 NIMatmul 回退路径；未知取值告警并回退到此) |
 | `tddft_svd_tol` | Float | `1e-6` | 仅 AO 模式：低秩 K 的相对奇异值阈值（保留 $\sigma_i \ge \varepsilon \sigma_{\max}$） |
 | `stability` | String | `"off"` | SCF 稳定性分析 (`"internal"` / `"external"` / `"full"` / `"auto"`)；非 `"off"` 时本任务只做稳定性分析（见 [tddft-stability](tddft-stability.md)） |
@@ -197,7 +197,7 @@ tddft_main(scf)
     ├── Step 2: 确定轨道扇区
     │   ├── 限制性: tddft_occupation_parameters() → (start_mo, occ_size, vir_size, dim)
     │   └── 非限制: tddft_occupation_parameters_u() → [α 扇区, β 扇区]
-    │       虚轨道截断 (tddft_cutoff_energy) 在此处理；冻结芯为 mol.start_mo (由 frozen_core_postscf 控制)
+    │       虚轨道截断 (tddft_cutoff_energy) 在此处理；冻芯为 mol.start_mo (由 frozen_core_postscf 控制)
     │
     ├── Step 3: 生成初始猜测 + 对角预条件器
     │   └── build_hdiag() + generate_initial_guess() (来自 solvers/davidson)
@@ -205,7 +205,7 @@ tddft_main(scf)
     ├── Step 4: 按自旋通道求解 (run_spin 闭包，每通道独立准备数据)
     │   ├── 数据准备 (每通道独立，自旋适配核不共享):
     │   │   ├── MO 模式: prepare_mo_data() → fxc/fxc_u 表 + 每扇区 MO 基 RI 束 (ri_terms)
-    │   │   └── AO 模式: prepare_ao_data_with_spin(scf, Some(spin)) → c_occ/c_vir + NIMatmul + 原始核表
+    │   │   └── AO 模式: prepare_ao_data_with_spin(scf, Some(spin)) → c_occ/c_vir + NIMatmul + 原始 XC 核
     │   │
     │   └── 求解器分层分派:
     │       ├── FEAST (仅限制性 + MO): feast_solve_tddft_tda/lr()
@@ -279,7 +279,7 @@ main_driver (SCF 收敛后、激发态计算之前)
 | `tddft.rs` | 共享数据结构 `TDDFTData`、`TDDFTMode`/`FxcDriver` 枚举，与两个构造器 (`prepare_mo_data`, `prepare_ao_data_with_spin`)，以及稠密小系统路径的模式分派构造器 `build_a`/`build_b` |
 | `tddft_solver.rs` | 本征值 TDDFT 总调度器 (`tddft_main`)。协调参考类型门控、扇区解析、逐自旋通道数据准备与求解器分派 (FEAST/稠密/Davidson)、结果打印与 JSON 汇总 |
 | `matvec.rs` | MO 模式矩阵-矢量积。实现 A 块和 B 块的矩阵-矢量积 (`a_matvec`, `b_matvec`，含 RSH 双系数交换)，每扇区 RI 束 `RITensorTerms` |
-| `matvec_ao.rs` | AO 模式矩阵-矢量积。过渡密度构造、`ri_jk` 批量 J/K、`numint_matmul` 批量 fxc、批量与稠密两条路径 |
+| `matvec_ao.rs` | AO 模式矩阵-矢量积。跃迁密度构造、`ri_jk` 批量 J/K、`numint_matmul` 批量 fxc、批量与稠密两条路径 |
 | `response.rs` | 响应 TDDFT 求解器 (`response_tddft`)。实现 Pople、GMRES、Klopper、稠密 LU 四种求解后端，以及极化密度导出 |
 | `stability.rs` | SCF 波函数稳定性分析 (`stability`, `StabilityReport`)。AO 模式 (A+B) 轨道 Hessian + batched Davidson |
 | `tddft_grad.rs` | 激发态解析梯度 (`TddftGradEngine`)。PySCF `grad/tdrks.py`/`tdrhf.py` 的 RI 移植 |
@@ -296,7 +296,7 @@ main_driver (SCF 收敛后、激发态计算之前)
 |----------|------|
 | `scf_io::SCF` | 提供 MO 系数、KS 轨道能量、RI 积分 (`rimatr`，RSH 另有 `rimatr_sr`)、数值格点、分子信息等核心数据 |
 | `dft::num_int` | 提供 `FXCMatvecData`/`FXCMatvecDataUnrestricted` (MO 模式 XC 核数据) 和 `fxc_matvec()` (XC 核矩阵-矢量积) |
-| `dft::numint_matmul` | AO 模式 XC 核：`NIMatmul` (格点 AO 缓存、批量密度构造与核收缩)、`eval_vxc_fxc_from_rho` (原始核表) |
+| `dft::numint_matmul` | AO 模式 XC 核：`NIMatmul` (格点 AO 缓存、批量密度构造与核收缩)、`eval_vxc_fxc_from_rho` (原始 XC 核) |
 | `dft::xceff` | libxc 求值封装 (`libxc_eval_eff`, `determine_den_type`)；三重态自旋极化核在此之上组合 |
 | `ri_jk` | AO 模式 J/K：`get_vj_ri_incore_nonsym`、`get_vk_ri_incore_dm`、`get_vk_ri_incore_dm_lowrank`、`get_vk_ri_incore_coeff_pair` (记号见 [ri-jk 文档](../ri-jk/index.md)) |
 | `ri_bse` | 提供 Coulomb 贡献 (`coulomb_contribution`)、响应方程求解器 (Pople/GMRES/Klopper，`ri_bse::response` 的适配复用)、偶极工具 (`dipoles::normalize` 等)、`pysoc_export` |
