@@ -15,6 +15,63 @@ Each version segment's `### rest` header carries the short commit-hash range of 
 
 ---
 
+## v2026.1.1.3 → v2026.1.1.4
+
+### rest (cf28a7ca..992262c3)
+
+- !265 perf(grad): stream the XC gradient accumulation, fixing a 39 GB memory blow-up on large grid sessions
+- !264 feat (grad): analytic first-order gradient for double hybrids
+
+### rest_regression (44a2b516..a62841e0)
+
+- !72 regression (grad): analytic first-order gradient for double hybrids
+
+---
+
+## v2026.1.1.2 → v2026.1.1.3
+
+### rest (8f55408b..cf28a7ca)
+
+- !263 feat(grad): hybrid-functional analytic gradients adopt the compact row layout
+- !262 fix the s-dftd3 version on CI
+- !260 fileop (fix #IKITG6): fix the dipole output unit conversion
+- !259 fix a frozen-core print
+- !258 feat(ri_jk): extend the compact row layout to post-SCF correlation energies (S2)
+- !257 print the commit hash and timestamp of the last REST commit at the top of the output
+- !256 feat(ri_jk): storage-level AO pair pruning and a compact row layout for incore RI-J/RI-K (S1)
+- !255 feat/refactor (analdrv): decouple the abstract open-shell response and introduce response-calculation auxiliary basis functions for RI-JK
+- !254 feat (ri-pt2): GPU engine for RI-PT2 tensor contractions
+- !253 fix(md): correct the link-H placement and reposition it in MD/opt; parse options
+- !252 revise solvent-related errors
+- !251 fix (dft): integration tests that introduce RadiiAdjust
+- !250 fixed the evGW convergence issue and implemented AO-style GW-BSE
+- !249 update the PR template
+- !248 add a panic for invalid job types and blocks
+- !246 ri_jk (feat): add a Schwartz-screening RI-J implementation
+- !243 updates for the built-in molecular dynamics (MD/AIMD) and QM/MM modules
+- !214 refactor UTDDFT and add stability analysis
+
+### rest_regression (a369066..44a2b516)
+
+- !71 test(grad): regression cases for hybrid-functional analytic gradients under AO pair pruning (S3c)
+- !70 regression (fileop, fix #IKITG6): fix the dipole output unit conversion
+- !69 test(ri_jk): regression cases for post-SCF correlation energies under AO pair pruning (S2)
+- !68 analdrv: add USCF multipole-moment test cases
+- !67 test(ri_jk): two-level pair_screen_threshold screening cases and record the ase lower bound of the MD reference values
+- !66 test(qmmm_md): refresh the butane/peptide references after the link-H fix
+- !65 added rsGW, Davidson BSE (NTDA) and FEAST BSE (TDA & NTDA)
+- !64 IYZ: fix a bug of validate.sh with --mpi
+- !63 add skips for missing dependencies such as ase and openmm
+- !62 add UTDDFT, RTDDFT triplet and stability tests
+- !61 ri_jk (feat): Schwartz-screening RI-J implementation (regression)
+- !60 add built-in MD / QMMM regression cases
+
+### rest_tensors (fbea339..9e5a827)
+
+- !22 FIX: datatype i8 mismatch on aarch64
+
+---
+
 ## v2026.1.1.1 → v2026.1.1.2
 
 ### rest (2a2c9f6a..8f55408b)

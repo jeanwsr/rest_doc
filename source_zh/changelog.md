@@ -15,6 +15,63 @@ python3 scripts/analyze_changes.py --auto --no-fetch
 
 ---
 
+## v2026.1.1.3 → v2026.1.1.4
+
+### rest (cf28a7ca..992262c3)
+
+- !265 perf(grad): XC 梯度改流式累加，修复大会话格点上 39 GB 的内存爆炸
+- !264 feat (grad): DH 一阶解析梯度
+
+### rest_regression (44a2b516..a62841e0)
+
+- !72 regression (grad): DH 一阶解析梯度
+
+---
+
+## v2026.1.1.2 → v2026.1.1.3
+
+### rest (8f55408b..cf28a7ca)
+
+- !263 feat(grad): 杂化泛函解析梯度走紧凑行布局
+- !262 fix s-dftd3 version on ci
+- !260 fileop(fix #IKITG6): 修正偶极矩输出单位问题
+- !259 fix one frozen-core print
+- !258 feat(ri_jk): 把紧凑行布局铺到后自洽场相关能（S2）
+- !257 在输出的开头打印当前可执行文件编译时REST的最后一个commit哈希值和时间戳
+- !256 feat(ri_jk): 存储级 AO 对剪枝与 incore RI-J/RI-K 紧凑行布局（S1）
+- !255 feat/refactor (analdrv): 解耦抽象开壳层响应，对 RI-JK 引入响应计算辅助基
+- !254 feat (ri-pt2): RI-PT2 张量收缩的 GPU 引擎实现
+- !253 fix(md): correct link-H placement and reposition it in MD/opt; parse o…
+- !252 Revise errors about solvent
+- !251 fix (dft): integration tests that introduce RadiiAdjust
+- !250 Fixed evGW Convergence Issue and Implemented AO-Style GW-BSE
+- !249 update pr template
+- !248 add panic for invalid jobtype and block
+- !246 ri_jk (feat): 增加 Schwartz Screening RI-J 实现
+- !243 内置分子动力学（MD/AIMD）与 QM/MM 模块的更新
+- !214 re-factor UTDDFT, add stability
+
+### rest_regression (a369066..44a2b516)
+
+- !71 test(grad): 杂化泛函解析梯度在 AO 对剪枝下的回归用例（S3c）
+- !70 regression (fileop, fix #IKITG6): 修正偶极矩输出单位问题
+- !69 test(ri_jk): 后自洽场相关能在 AO 对剪枝下的回归用例（S2）
+- !68 analdrv: 增加 USCF 多极矩测试用例
+- !67 test(ri_jk): pair_screen_threshold 的两级筛选用例，并记录 MD 参考值的 ase 下限
+- !66 test(qmmm_md): refresh butane/peptide references after link-H fix
+- !65 Added rsGW, Davidson BSE(NTDA) and FEAST BSE(TDA&NTDA)
+- !64 IYZ: fix a bug for validate.sh with --mpi
+- !63 add skip for missing deps like ase, openmm
+- !62 add utddft, rtddft triplet, stability test
+- !61 ri_jk (feat): 增加 Schwartz Screening RI-J 实现 (regression)
+- !60 新增内置 MD / QMMM 回归用例
+
+### rest_tensors (fbea339..9e5a827)
+
+- !22 FIX: datatype i8 mismatch on aarch64
+
+---
+
 ## v2026.1.1.1 → v2026.1.1.2
 
 ### rest (2a2c9f6a..8f55408b)
