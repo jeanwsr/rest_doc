@@ -28,6 +28,8 @@ When both `xc_scf` and `xc_nscf` are present it is a two-step (double-hybrid etc
 | `from_dfa4rest(&DFA4REST)` | the legacy/DeepLearning adapter (code arrays -> components) |
 | `to_dfa4rest()` / `to_xc_data()` | legacy bridges: convert back to the old DFA4REST (full / SCF-side only) |
 | `update_pt2_params(os, ss)` | override the PT2 `(c_os, c_ss)` factors (ctrl keywords; also called during the DL-DFA iteration) |
+| `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | derive the total HFX coefficient of the SCF / final-energy functional from the components (written into the stored fields at parse time) |
+| `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | derive the RSH parameters from the components (raw `(omega, c_LR, c_SR - c_LR)` / consumer convention `(omega, c_LR, c_SR)`; written into the stored fields at parse time) |
 | `check_sanity()` | definition self-check |
 
 ### Accessors (consumer reads)
@@ -38,9 +40,7 @@ SCF/grad/hessian/analdrv consumers read the definition through the following met
 |---|---|---|
 | `is_dfa_scf()` | `bool` | whether the SCF functional evaluates XC on a grid (has libxc components) |
 | `is_hybrid()` / `is_rsh()` | `bool` | hybrid / range-separated predicates |
-| `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | `f64` | total HFX coefficient of the SCF / final-energy functional |
 | `rsh_params_scf()` | `Option<(f64, f64, f64)>` | SCF RSH parameters `(omega, c_LR, c_SR)` (stored at parse time; `omega()` reads the single parameter) |
-| `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | `(Option<f64>, f64, f64)` | per-component-summed RSH forms (raw / consumer convention) |
 | `family_pos()` | `Option<DFAFamily>` | post-SCF family (PT2/RPA/SCSRPA/SBGE2), backed by `FIFTH_RUNG_COMPONENT_TYPES` |
 | `fifth_rung_component()` / `is_fifth_dfa()` / `is_rpa()` | - | the fifth-rung component and its predicates |
 | `is_nlc()` / `vv10_params()` | - | non-local correlation (VV10) predicate and `(b, C)` parameters |

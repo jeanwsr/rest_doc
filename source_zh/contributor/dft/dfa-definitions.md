@@ -28,6 +28,8 @@ pub struct DFAdef {
 | `from_dfa4rest(&DFA4REST)` | legacy/DeepLearning 路线的适配器（code-array -> 组分） |
 | `to_dfa4rest()` / `to_xc_data()` | legacy 桥：转为旧版 DFA4REST（全量 / 仅 SCF 侧） |
 | `update_pt2_params(os, ss)` | 覆写 PT2 `(c_os, c_ss)` 因子（ctrl 关键词；DL-DFA 迭代中亦会调用） |
+| `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | 从组分推导 SCF / 最终能量泛函的总 HFX 系数（parse 时写入存储 field） |
+| `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | 从组分推导 RSH 参数（原始 `(omega, c_LR, c_SR - c_LR)` / 消费者约定 `(omega, c_LR, c_SR)`；parse 时写入存储 field） |
 | `check_sanity()` | 定义自检 |
 
 ### accessor（消费者读取）
@@ -38,9 +40,7 @@ SCF/grad/hessian/analdrv 等消费者通过以下方法读取定义，不做任�
 |---|---|---|
 | `is_dfa_scf()` | `bool` | SCF 泛函是否含 libxc 组分（在格点上计算 XC） |
 | `is_hybrid()` / `is_rsh()` | `bool` | 是否杂化 / 是否 range-separated |
-| `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | `f64` | SCF / 最终能量泛函的总 HFX 系数 |
 | `rsh_params_scf()` | `Option<(f64, f64, f64)>` | SCF 泛函 RSH 参数 `(omega, c_LR, c_SR)`（parse 时存储；`omega()` 读取单个参数） |
-| `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | `(Option<f64>, f64, f64)` | RSH 参数的逐组分求和形式（原始 / 消费者约定） |
 | `family_pos()` | `Option<DFAFamily>` | post-SCF 家族（PT2/RPA/SCSRPA/SBGE2），由 `FIFTH_RUNG_COMPONENT_TYPES` 支撑 |
 | `fifth_rung_component()` / `is_fifth_dfa()` / `is_rpa()` | — | 第五阶组分与其谓词 |
 | `is_nlc()` / `vv10_params()` | — | 非局域相关（VV10）判定与 `(b, C)` 参数 |
