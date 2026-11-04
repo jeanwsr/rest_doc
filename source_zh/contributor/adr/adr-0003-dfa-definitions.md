@@ -1,15 +1,19 @@
-# ADR-0003：DFA 定义统一到 DFAdef（parse_xc 为主定义）
+# ADR-0003：DFA 定义
 
 - **状态**：使用中
 - **日期**：2026-11-03
-- **适用范围**：crate `rest` 的 DFA 定义（`src/dft/parse_xc/`）与全部 DFA 消费者（`scf_io`、`grad`、`hessian`、`analdrv`、`ri_tddft`、`ri_gw`、`ri_pt2` 等）。存量代码中 `DFA4REST`（已移至 `src/dft/legacy.rs`）与 `Molecule.xc_data`（现为 `Option`）尚存，供 legacy/DeepLearning 路线与调试使用，将随 legacy parser 退役。
-- **作者**：王世荣 (canarias)；本篇由 [PR !278](https://gitee.com/restgroup/rest/pulls/278) 描述中的 ADR 草稿整理成文。
+- **适用范围**：crate `rest` 的 DFA 定义（`src/dft/parse_xc/`）与全部 DFA 消费者（`scf_io`、`grad`、`hessian`、`analdrv`、`ri_tddft`、`ri_gw`、`ri_pt2` 等）。存量代码中 `DFA4REST`（已移至 `src/dft/legacy.rs`）与 `Molecule.xc_data`（现为 `Option`）尚存，供调试使用，将随 legacy parser 退役。
+- **作者**：王石嵘
 
 ## 决定
 
-- **原则一：定义与计算解耦**（定义与计算解耦）。完成全部的定义工作后，再转入计算。计算函数中不做定义相关的事情。例如，计算函数接收 `(factor, LibXCFunctional)`，而不是 `(factor, id)`。
-- **原则二：一切皆组分**（一切皆组分）。DFA 的每个部分都要被定义为组分，包括 D3/NLC/HF。组分的参数不添加为整体的 field，而是从组分（`DFAComponent`）的 api/field 获取。（不过考虑到和旧版 api 的一致性，以及本身实现的方便，`DFAdef` 还是有一些整体的 field，例如整体的 hybrid/rsh 参数。）DFA 整体的参数推荐从 accessor fn 获取，例如 `rsh_params_scf()`。
-- **parse_xc 为主定义。** `xc_parser` 默认取值为 `parse_xc`；`DFAdef`（`src/dft/parse_xc/`）是 DFA 的主定义。`DFA4REST` 移入 `src/dft/legacy.rs`，legacy 与 DeepLearning 路线解析后经 `DFAdef::from_dfa4rest` 转为 DFAdef；`xc_exc_vxc` 之类的计算函数成为 free function，以 `(factor, LibXCFunctional)` 列表为输入。关键词 `xc_namelist`/`xc_paralist`/`xc_hybrid_para`（即 `xc_type = NonStandard` 输入方式）已移除，相应泛函改用 parse_xc 表达式书写。
+- **原则一：定义与计算解耦**。完成全部的定义工作后，再转入计算。计算函数中不做定义相关的事情。例如，计算函数接收 `(factor, LibXCFunctional)`，而不是 `(factor, id)`。
+- **原则二：一切皆组分**。DFA 的每个部分都要被定义为组分，包括 D3/NLC/HF。
+  - 组分的参数不添加为整体的 field，而是从组分（`DFAComponent`）的 api/field 获取。（不过考虑到和旧版 api 的一致性，以及本身实现的方便，`DFAdef` 还是有一些整体的 field，例如整体的 hybrid/rsh 参数。）
+  - DFA 整体的参数推荐从 accessor fn 获取，例如 `rsh_params_scf()`。
+- `DFAdef`（`src/dft/parse_xc/`）是 DFA 的主定义。
+  - `DFA4REST` 移入 `src/dft/legacy.rs`，legacy 与 DeepLearning 路线解析后经 `DFAdef::from_dfa4rest` 转为 DFAdef；
+  - `xc_exc_vxc` 之类的计算函数成为 free function。
 
 ## 1. 背景
 
