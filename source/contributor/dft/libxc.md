@@ -4,20 +4,11 @@ REST uses the external crate [`libxc-rs`](https://github.com/RESTGroup/libxc-rs)
 
 ## Architecture
 
-```
-┌─────────────────────┐
-│  DFA4REST (mod.rs)   │  Core DFT data structure, calls libxc via DFA
-│  libxc_itrf.rs       │  Numerical integration interface (high-order derivatives)
-└────────┬────────────┘
-         │ xc_func_init / lda/gga/mgga_exc_vxc / eval_libxc_func_new
-┌────────▼────────────┐
-│  libxc_helper.rs     │  Thin wrapper over libxc-rs
-└────────┬────────────┘
-         │ LibXCFunctional / compute_lda/gga/mgga
-┌────────▼────────────┐
-│  libxc (external)    │  Safe Rust FFI bindings to C libxc
-└─────────────────────┘
-```
+The call hierarchy, top-down:
+
+1. `DFAdef` (`parse_xc`, the primary DFA definition, see [ADR-0003](../adr/adr-0003-dfa-definitions.md); the old `DFA4REST` lives in `legacy.rs`, legacy route only) and `libxc_itrf.rs` (numerical integration interface providing high-order derivatives for num_int/response), calling via `xc_func_init` / `lda/gga/mgga_exc_vxc` / `eval_libxc_func_new`
+2. `libxc_helper.rs`: a thin wrapper hiding the libxc-rs details
+3. the external `libxc` crate: safe Rust bindings FFI-calling the C libxc
 
 ## Key Types
 
@@ -47,7 +38,23 @@ Implements `Drop` — resources are automatically freed when the object goes out
 | `HybridMGGA` | `HybMGGA` |
 | (none) | `HybLDA` |
 
-### `DFA4REST` (`src/dft/mod.rs`)
+### `DFAdef` (`src/dft/parse_xc/parse.rs`, primary definition)
+
+The primary definition of a DFA (principles in [ADR-0003](../adr/adr-0003-dfa-definitions.md); the full API table is on [DFA Definition API](dfa-definitions.md)): the SCF part and the non-SCF (post-SCF) part are both lists of `DFAComponent`s; whole-functional parameters are recommended to be read through accessors.
+
+| Method | Description |
+|---|---|
+| `scf_func_list(spin)` / `nscf_func_list(spin)` | Build the `(factor, LibXCFunctional)` evaluation list (with `_omega` set), consumed by the exc/vxc free functions |
+| `is_dfa_scf()` / `is_hybrid()` / `is_rsh()` | SCF functional predicates |
+| `family_pos()` / `fifth_rung_component()` / `is_rpa()` | Post-SCF (fifth-rung) family and component |
+| `rsh_params_scf()` | RSH parameters `(omega, c_LR, c_SR)` of the SCF functional (computed at parse time, stored in `dfa_rsh_scf_lrsr`) |
+| `omega()` / `update_pt2_params(os, ss)` | RSH omega; PT2 `(c_os, c_ss)` factor override |
+| `is_nlc()` / `vv10_params()` | Non-local correlation (VV10) predicate and `(b, C)` parameters |
+| `x_part(spin)` / `c_part(spin)` | Pure exchange / correlation parts (decomposed by the libxc functional kind) |
+
+### `DFA4REST` (`src/dft/legacy.rs`, legacy)
+
+The old code-array definition, kept only on the legacy/DeepLearning routes (its parse result is converted into a DFAdef via `DFAdef::from_dfa4rest`).
 
 | Method | Description |
 |---|---|
@@ -55,7 +62,6 @@ Implements `Drop` — resources are automatically freed when the object goes out
 | `init_libxc_and_set_param(code)` | Initialize with parameters (e.g. omega) |
 | `get_hybrid_libxc(...)` | Compute total HFX coefficient from SCF functionals |
 | `get_rsh_libxc(...)` | Get RSH parameters from SCF functionals |
-| `xc_exc_vxc(...)` | Dispatch to `lda/gga/mgga_exc_vxc` by family |
 
 ## `libxc_helper.rs` Public API
 
@@ -70,7 +76,7 @@ Implements `Drop` — resources are automatically freed when the object goes out
 
 ## `libxc_itrf.rs` Integration Interface
 
-`eval_xc_eff(func_ids, factors, xc_type, spin, rho_array, np, deriv)` is the main entry point for `num_int.rs` and `response.rs`. It accepts multiple libxc functional IDs with coefficients, computes XC energy, first-order potential, and high-order derivatives, then converts from libxc's raw output format to REST's internal representation.
+`eval_xc_eff(funcs, xc_type, spin, rho_array, np, deriv)` is the main entry point for `num_int.rs` and `response.rs`. It accepts a pre-built list of `(factor, LibXCFunctional)` pairs (libxc functionals are initialized once at the definition boundary rather than re-initialized per grid block), computes XC energy, first-order potential, and high-order derivatives, then converts from libxc's raw output format to REST's internal representation.
 
 ## API Migration Reference
 

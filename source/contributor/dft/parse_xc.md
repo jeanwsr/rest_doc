@@ -1,11 +1,12 @@
 # parse_xc
 
-To handle arbitrary functional inputs, a new xc_parser was written following PySCF's `parse_xc` and the extensions from ajz34/dh. In REST it is used as follows:
+To handle arbitrary functional inputs, a new xc_parser was written following PySCF's `parse_xc` and the extensions from ajz34/dh. `xc_parser = "parse_xc"` is now the default option (see [ADR-0003](../adr/adr-0003-dfa-definitions.md)), so one can simply write
 
 ```
 xc = "B3LYP"
-xc_parser = "parse_xc"
 ```
+
+The old legacy parser remains available via `xc_parser = "legacy"` (its parse result is likewise converted into a DFAdef); the `xc_type = NonStandard` input style has been removed — write such functionals as parse_xc expressions instead.
 
 The entire input string is **case-insensitive**.
 
@@ -81,6 +82,7 @@ thread 'main' (1822079) panicked at rest/src/dft/parse_xc/parse.rs:130:17:
 Error: functional X_PBE has illegal prefix for type C
 ```
 
+(nonlibxc-component)=
 ### NONLIBXC Components
 
 | Name | ComponentType | Alias | Parameters |
@@ -206,7 +208,7 @@ pub struct DFAdef {
 }
 ```
 
-When both `xc_scf` and `xc_nscf` are present, it is a two-step functional; single-step functionals have only the former as `Some`.
+When both `xc_scf` and `xc_nscf` are present, it is a two-step functional; single-step functionals have only the former as `Some`. `DFAdef` is now the primary definition of a DFA (see [ADR-0003](../adr/adr-0003-dfa-definitions.md)); the old `DFA4REST` moved to `src/dft/legacy.rs` and survives only on the legacy/DeepLearning routes via `DFAdef::from_dfa4rest`. The old/new API correspondence is documented in [the libxc interface](libxc.md).
 
 The `DFAComponent` struct is defined as:
 

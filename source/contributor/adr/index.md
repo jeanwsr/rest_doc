@@ -11,4 +11,5 @@ This section is translated from the Chinese documentation (`source_zh`), which i
 adr-rules-and-explanation
 adr-0001-blas-threads
 adr-0002-blas-global-thread-init
+adr-0003-dfa-definitions
 ```

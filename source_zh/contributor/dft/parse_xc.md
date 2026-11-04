@@ -1,10 +1,10 @@
 # parse_xc
 
-为了解决任意的泛函输入的问题，仿照 pyscf 的 parse_xc 和 ajz34/dh 的扩展写了一个新的 xc_parser。在 REST 程序中可以如下使用
+为了解决任意的泛函输入的问题，仿照 pyscf 的 parse_xc 和 ajz34/dh 的扩展写了一个新的 xc_parser。`xc_parser = "parse_xc"` 现已是默认选项（见 [ADR-0003](../adr/adr-0003-dfa-definitions.md)），可直接写
 ```
 xc = "B3LYP"
-xc_parser = "parse_xc"
 ```
+旧的 legacy parser 仍可通过 `xc_parser = "legacy"` 使用（其解析结果同样会转为 DFAdef）；`xc_type = NonStandard` 输入方式已被移除，相应泛函请改用 parse_xc 表达式书写。
 
 以下是规则介绍。整个输入字符串**大小写不敏感**。
 
@@ -71,6 +71,7 @@ thread 'main' (1822079) panicked at rest/src/dft/parse_xc/parse.rs:130:17:
 Error: functional X_PBE has illegal prefix for type C
 ```
 
+(nonlibxc-component)=
 ### NONLIBXC component
 
 | | ComponenType| alias | param  |
@@ -198,7 +199,7 @@ pub struct DFAdef {
 }
 ```
 同时有 `xc_scf` 和 `xc_nscf` 时为两步泛函；一步泛函只有前者非None。
-这个结构体已经包含了 DFA4REST 中的所有信息，并且可以包含更多。
+这个结构体已经包含了 DFA4REST 中的所有信息，并且可以包含更多。`DFAdef` 现为 DFA 的主定义（见 [ADR-0003](../adr/adr-0003-dfa-definitions.md)）；旧版 `DFA4REST` 移至 `src/dft/legacy.rs`，仅在 legacy/DeepLearning 路线中经 `DFAdef::from_dfa4rest` 转换后继续存在。新/旧 API 的对照见 [libxc 接口](libxc.md)。
 
 Component 结构体的定义如下
 ```rust

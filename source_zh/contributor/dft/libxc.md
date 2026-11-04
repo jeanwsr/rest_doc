@@ -4,20 +4,11 @@ REST 使用外部 crate [`libxc-rs`](https://github.com/RESTGroup/libxc-rs)（[d
 
 ## 架构
 
-```
-┌─────────────────────┐
-│  DFA4REST (mod.rs)   │  核心 DFT 数据结构，通过 DFA 调用 libxc
-│  libxc_itrf.rs       │  数值积分接口，为 num_int/response 提供高阶导数
-└────────┬────────────┘
-         │ xc_func_init / lda/gga/mgga_exc_vxc / eval_libxc_func_new
-┌────────▼────────────┐
-│  libxc_helper.rs     │  薄封装层，屏蔽 libxc-rs 细节
-└────────┬────────────┘
-         │ LibXCFunctional / compute_lda/gga/mgga
-┌────────▼────────────┐
-│  libxc (外部 crate)  │  安全 Rust 封装，FFI 调用 C libxc
-└─────────────────────┘
-```
+调用层次自上而下为：
+
+1. `DFAdef`（`parse_xc`，DFA 主定义，见 [ADR-0003](../adr/adr-0003-dfa-definitions.md)；旧版 `DFA4REST` 位于 `legacy.rs`，仅存于 legacy 路线）与 `libxc_itrf.rs`（数值积分接口，为 num_int/response 提供高阶导数），经 `xc_func_init` / `lda/gga/mgga_exc_vxc` / `eval_libxc_func_new` 调用
+2. `libxc_helper.rs`：薄封装层，屏蔽 libxc-rs 细节
+3. 外部 crate `libxc`：安全 Rust 封装，FFI 调用 C libxc
 
 ## 关键数据结构
 
@@ -47,7 +38,23 @@ REST 使用外部 crate [`libxc-rs`](https://github.com/RESTGroup/libxc-rs)（[d
 | `HybridMGGA` | `HybMGGA` |
 | （无） | `HybLDA` |
 
-### `DFA4REST`（`src/dft/mod.rs`）
+### `DFAdef`（`src/dft/parse_xc/parse.rs`，主定义）
+
+DFA 的主定义（设计原则见 [ADR-0003](../adr/adr-0003-dfa-definitions.md)；完整 API 表见 [DFA 定义 API](dfa-definitions.md)）：SCF 部分与非 SCF（post-SCF）部分均为 `DFAComponent` 组分列表；整体参数推荐从 accessor 读取。
+
+| 方法 | 说明 |
+|---|---|
+| `scf_func_list(spin)` / `nscf_func_list(spin)` | 构造 `(factor, LibXCFunctional)` 计算列表（含 `_omega` 参数设置），供 exc/vxc 等 free function 使用 |
+| `is_dfa_scf()` / `is_hybrid()` / `is_rsh()` | SCF 泛函谓词 |
+| `family_pos()` / `fifth_rung_component()` / `is_rpa()` | post-SCF（第五阶）家族与组分 |
+| `rsh_params_scf()` | SCF 泛函的 RSH 参数 `(omega, c_LR, c_SR)`（parse 时计算并存于 `dfa_rsh_scf_lrsr`） |
+| `omega()` / `update_pt2_params(os, ss)` | RSH omega；PT2 `(c_os, c_ss)` 因子覆写 |
+| `is_nlc()` / `vv10_params()` | 非局域相关（VV10）判定与 `(b, C)` 参数 |
+| `x_part(spin)` / `c_part(spin)` | 纯交换 / 纯相关部分（按 libxc functional kind 分解） |
+
+### `DFA4REST`（`src/dft/legacy.rs`，legacy）
+
+旧版 code-array 定义，仅存于 legacy/DeepLearning 路线（解析后经 `DFAdef::from_dfa4rest` 转为 DFAdef）。
 
 | 方法 | 说明 |
 |---|---|
@@ -55,7 +62,6 @@ REST 使用外部 crate [`libxc-rs`](https://github.com/RESTGroup/libxc-rs)（[d
 | `init_libxc_and_set_param(code)` | 带参数（如 omega）初始化 |
 | `get_hybrid_libxc(...)` | 遍历 SCF 泛函计算总 HFX 系数 |
 | `get_rsh_libxc(...)` | 遍历 SCF 泛函获取 RSH 参数 |
-| `xc_exc_vxc(...)` | 按 family 分发调用 `lda/gga/mgga_exc_vxc` |
 
 ## `libxc_helper.rs` 公共 API
 
@@ -70,7 +76,7 @@ REST 使用外部 crate [`libxc-rs`](https://github.com/RESTGroup/libxc-rs)（[d
 
 ## `libxc_itrf.rs` 数值积分接口
 
-`eval_xc_eff(func_ids, factors, xc_type, spin, rho_array, np, deriv)` 是 `num_int.rs` 和 `response.rs` 的主要调用入口。接受多个 libxc 功能 ID 及其系数，计算 XC 能量、一阶势、二阶/三阶导数，并将 libxc 原始输出转换为 REST 内部格式。
+`eval_xc_eff(funcs, xc_type, spin, rho_array, np, deriv)` 是 `num_int.rs` 和 `response.rs` 的主要调用入口。接受预构造的 `(factor, LibXCFunctional)` 列表（libxc 泛函在定义边界初始化一次，而非每个格点块重新初始化），计算 XC 能量、一阶势、二阶/三阶导数，并将 libxc 原始输出转换为 REST 内部格式。
 
 ## 接口迁移对照
 
