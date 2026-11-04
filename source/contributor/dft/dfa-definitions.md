@@ -19,25 +19,44 @@ pub struct DFAdef {
 
 When both `xc_scf` and `xc_nscf` are present it is a two-step (double-hybrid etc.) functional; single-step functionals have only the former as `Some`.
 
-### Accessor methods
+### Constructors (parsing / definition-construction phase)
+
+| Method | Description |
+|---|---|
+| `DFAdef::new()` | an empty definition |
+| `parse_and_derive(xc, spin, print)` | the parse entry: xc string -> `DFAdef` |
+| `from_dfa4rest(&DFA4REST)` | the legacy/DeepLearning adapter (code arrays -> components) |
+| `to_dfa4rest()` / `to_xc_data()` | legacy bridges: convert back to the old DFA4REST (full / SCF-side only) |
+| `update_pt2_params(os, ss)` | override the PT2 `(c_os, c_ss)` factors (ctrl keywords; also called during the DL-DFA iteration) |
+| `check_sanity()` | definition self-check |
+
+### Accessors (consumer reads)
+
+SCF/grad/hessian/analdrv consumers read the definition through the following methods, without modifying it.
 
 | Method | Returns | Description |
 |---|---|---|
 | `is_dfa_scf()` | `bool` | whether the SCF functional evaluates XC on a grid (has libxc components) |
 | `is_hybrid()` / `is_rsh()` | `bool` | hybrid / range-separated predicates |
 | `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | `f64` | total HFX coefficient of the SCF / final-energy functional |
-| `get_rsh_scf(spin)` | `(Option<f64>, f64, f64)` | raw RSH parameters `(omega, c_LR, c_SR - c_LR)` (summed per component) |
-| `get_rsh_scf_lrsr(spin)` | same | consumer-convention form `(omega, c_LR, c_SR)` |
-| `rsh_params_scf()` | `Option<(f64, f64, f64)>` | same values, read from the parse-time field (recommended entry point) |
-| `omega()` | `Option<f64>` | single RSH parameter (field read) |
+| `rsh_params_scf()` | `Option<(f64, f64, f64)>` | SCF RSH parameters `(omega, c_LR, c_SR)` (stored at parse time; `omega()` reads the single parameter) |
+| `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | `(Option<f64>, f64, f64)` | per-component-summed RSH forms (raw / consumer convention) |
 | `family_pos()` | `Option<DFAFamily>` | post-SCF family (PT2/RPA/SCSRPA/SBGE2), backed by `FIFTH_RUNG_COMPONENT_TYPES` |
 | `fifth_rung_component()` / `is_fifth_dfa()` / `is_rpa()` | - | the fifth-rung component and its predicates |
-| `update_pt2_params(os, ss)` | - | override the PT2 `(c_os, c_ss)` factors |
 | `is_nlc()` / `vv10_params()` | - | non-local correlation (VV10) predicate and `(b, C)` parameters |
 | `x_part(spin)` / `c_part(spin)` | `Option<DFAdef>` | pure exchange / correlation part (decomposed by the libxc functional kind; combined functionals yield `None`) |
 | `has_nscf()` / `use_density_gradient()` / `use_kinetic_density()` / `use_laplacian()` | `bool` | definition-shape predicates |
-| `scf_func_list(spin)` / `nscf_func_list(spin)` | `Vec<(f64, LibXCFunctional)>` | build the evaluation list (with `_omega` set) for the exc/vxc free functions |
-| `summary()` / `formatted_output()` / `check_sanity()` | - | output and self-check |
+| `summary()` / `formatted_output()` | - | printout |
+
+### Definition -> evaluation list (boundary construction)
+
+The boundary between definition and computation: the `(factor, LibXCFunctional)` list is built here (libxc functionals initialized once, with `_omega` set) and then consumed by the exc/vxc free functions.
+
+| Method | Description |
+|---|---|
+| `scf_func_list(spin)` | the SCF functional's evaluation list |
+| `nscf_func_list(spin)` | the DFT part of the final-energy functional (`None` for pure-MP2 families) |
+| `func_list_from_components(comps, spin)` | the door for an arbitrary component list (used by the response/grad interfaces) |
 
 ## DFAComponent
 
@@ -56,16 +75,24 @@ pub struct DFAComponent {
 pub enum ComponentType { HF, RSHF, PT2, RPA, SCSRPA, SBGE2, Disp, Libxc, Unknown }
 ```
 
+### Constructors / normalization (parse phase)
+
+| Method | Description |
+|---|---|
+| `DFAComponent::new(factor, func)` / `from_libxc(id, factor)` | construct a component |
+| `canonicalize()` / `normalize_rsh()` / `normalize_pt2_param()` | parse-time normalization (RSH convention, PT2 parameter shape) |
+
+### Accessors (consumer reads)
+
 | Method | Description |
 |---|---|
 | `to_libxc_functional(spin)` | initialize this component's `LibXCFunctional` (`None` for non-Libxc components) |
 | `get_hybrid(spin)` / `get_rsh(spin)` | per-component HFX / RSH parameters |
 | `is_rsh()` / `is_nlc()` | component predicates |
 | `get_dftd_params()` | Disp component parameters (dftd3-rs / dftd4-rs toml) |
-| `canonicalize()` / `normalize_rsh()` / `normalize_pt2_param()` | normalization (RSH convention, PT2 parameter shape) |
 | `formatted_output()` | component printout |
 
-The non-libxc component types, their input names, aliases and parameters are listed in [parse_xc](parse_xc.md#NONLIBXC-component).
+The non-libxc component types, their input names, aliases and parameters are listed in [parse_xc](parse_xc.md).
 
 ## Computation API (free functions)
 

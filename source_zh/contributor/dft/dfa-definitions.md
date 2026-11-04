@@ -19,25 +19,44 @@ pub struct DFAdef {
 
 同时有 `xc_scf` 与 `xc_nscf` 时为两步（双杂化等）泛函；一步泛函只有前者非 `None`。
 
-### accessor 方法
+### 构造（解析 / 定义构造期）
+
+| 方法 | 说明 |
+|---|---|
+| `DFAdef::new()` | 空定义 |
+| `parse_and_derive(xc, spin, print)` | 解析入口：xc 字符串 -> `DFAdef` |
+| `from_dfa4rest(&DFA4REST)` | legacy/DeepLearning 路线的适配器（code-array -> 组分） |
+| `to_dfa4rest()` / `to_xc_data()` | legacy 桥：转为旧版 DFA4REST（全量 / 仅 SCF 侧） |
+| `update_pt2_params(os, ss)` | 覆写 PT2 `(c_os, c_ss)` 因子（ctrl 关键词；DL-DFA 迭代中亦会调用） |
+| `check_sanity()` | 定义自检 |
+
+### accessor（消费者读取）
+
+SCF/grad/hessian/analdrv 等消费者通过以下方法读取定义，不做任何修改。
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
 | `is_dfa_scf()` | `bool` | SCF 泛函是否含 libxc 组分（在格点上计算 XC） |
 | `is_hybrid()` / `is_rsh()` | `bool` | 是否杂化 / 是否 range-separated |
 | `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | `f64` | SCF / 最终能量泛函的总 HFX 系数 |
-| `get_rsh_scf(spin)` | `(Option<f64>, f64, f64)` | RSH 原始参数 `(omega, c_LR, c_SR - c_LR)`（逐组分求和） |
-| `get_rsh_scf_lrsr(spin)` | 同上 | 消费者约定形式 `(omega, c_LR, c_SR)` |
-| `rsh_params_scf()` | `Option<(f64, f64, f64)>` | 同上，但读取 parse 时存储的 field（推荐入口） |
-| `omega()` / `rsh_alpha()` 类 | `Option<f64>` | RSH 的单个参数（field 读取） |
+| `rsh_params_scf()` | `Option<(f64, f64, f64)>` | SCF 泛函 RSH 参数 `(omega, c_LR, c_SR)`（parse 时存储；`omega()` 读取单个参数） |
+| `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | `(Option<f64>, f64, f64)` | RSH 参数的逐组分求和形式（原始 / 消费者约定） |
 | `family_pos()` | `Option<DFAFamily>` | post-SCF 家族（PT2/RPA/SCSRPA/SBGE2），由 `FIFTH_RUNG_COMPONENT_TYPES` 支撑 |
 | `fifth_rung_component()` / `is_fifth_dfa()` / `is_rpa()` | — | 第五阶组分与其谓词 |
-| `update_pt2_params(os, ss)` | — | 覆写 PT2 组分的 `(c_os, c_ss)` 因子 |
 | `is_nlc()` / `vv10_params()` | — | 非局域相关（VV10）判定与 `(b, C)` 参数 |
 | `x_part(spin)` / `c_part(spin)` | `Option<DFAdef>` | 纯交换 / 纯相关部分（按 libxc functional kind 分解；组合泛函返回 `None`） |
 | `has_nscf()` / `use_density_gradient()` / `use_kinetic_density()` / `use_laplacian()` | `bool` | 定义形状谓词 |
-| `scf_func_list(spin)` / `nscf_func_list(spin)` | `Vec<(f64, LibXCFunctional)>` | 构造计算列表（含 `_omega` 设置），供 exc/vxc 等 free function 使用 |
-| `summary()` / `formatted_output()` / `check_sanity()` | — | 输出与自检 |
+| `summary()` / `formatted_output()` | — | 输出 |
+
+### 定义 -> 计算列表（边界构造）
+
+定义与计算的边界：`(factor, LibXCFunctional)` 列表在此构造（libxc 泛函初始化一次，含 `_omega` 参数设置），之后供 exc/vxc 等 free function 使用。
+
+| 方法 | 说明 |
+|---|---|
+| `scf_func_list(spin)` | SCF 泛函的计算列表 |
+| `nscf_func_list(spin)` | 最终能量泛函的 DFT 部分列表（纯 MP2 家族为 `None`） |
+| `func_list_from_components(comps, spin)` | 任意组分列表的 door（response/grad 接口使用） |
 
 ## DFAComponent
 
@@ -56,16 +75,24 @@ pub struct DFAComponent {
 pub enum ComponentType { HF, RSHF, PT2, RPA, SCSRPA, SBGE2, Disp, Libxc, Unknown }
 ```
 
+### 构造 / 归一化（解析期）
+
+| 方法 | 说明 |
+|---|---|
+| `DFAComponent::new(factor, func)` / `from_libxc(id, factor)` | 构造组分 |
+| `canonicalize()` / `normalize_rsh()` / `normalize_pt2_param()` | 解析期归一化（RSH 约定、PT2 参数形状） |
+
+### accessor（消费者读取）
+
 | 方法 | 说明 |
 |---|---|
 | `to_libxc_functional(spin)` | 初始化该组分的 `LibXCFunctional`（非 Libxc 组分返回 `None`） |
 | `get_hybrid(spin)` / `get_rsh(spin)` | 单组分的 HFX / RSH 参数 |
 | `is_rsh()` / `is_nlc()` | 组分谓词 |
 | `get_dftd_params()` | Disp 组分的参数（dftd3-rs / dftd4-rs toml） |
-| `canonicalize()` / `normalize_rsh()` / `normalize_pt2_param()` | 归一化（RSH 约定、PT2 参数形状） |
 | `formatted_output()` | 组分信息输出 |
 
-非 libxc 组分类型与输入名称的对应（`ComponentType`、alias、参数）见 [parse_xc](parse_xc.md#NONLIBXC-component)。
+非 libxc 组分类型与输入名称的对应（`ComponentType`、alias、参数）见 [parse_xc](parse_xc.md)。
 
 ## 计算 API（free function）
 
