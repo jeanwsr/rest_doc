@@ -36,14 +36,31 @@ let (omega, c_lr, c_sr) = dfa.rsh_params_scf().unwrap();
 let hyb = dfa.dfa_hybrid_scf;
 ```
 
-## 1. 背景
+## 1. DFAComponent 与 ComponentType
+
+DFA 的每个部分是一个组分 `DFAComponent`：
+
+| field | 说明 |
+|---|---|
+| `factor` | 系数 |
+| `func` / `func_full_name` | 组分名 / libxc 全名 |
+| `id` | libxc 编号（Libxc 组分） |
+| `param_positional` / `param_keyword` | 参数（如 PT2 的 `(c_os, c_ss)`、RSHF 的 `omega`） |
+| `component_type` | 组分类型 |
+| `reference` | 文献 |
+
+`ComponentType` 取值：`Libxc`（libxc 泛函）、`HF`（精确交换）、`RSHF`（range-separated HF：`SR_HF`/`LR_HF`/`RSH`）、`PT2`（MP2 型相关）、`RPA` / `SCSRPA` / `SBGE2`（第五阶 RPA 家族）、`Disp`（经验色散 D3/D4/VV10）、`Unknown`。
+
+完整的 field/方法表见 [DFA 定义 API](../dft/dfa-definitions.md)。
+
+## 2. 背景
 
 本决定的最初目的是将 `parse_xc` 设为默认 parser，以避免各种需要手动设置 parser 的麻烦。由于 `DFA4REST` 与 `DFAdef` 实际上都是描述 DFA 定义的结构体（从功能上来说前者并不只是定义，也包括计算函数，但其本身的 field 只有定义），因此将 DFA 定义相关的 API 统一到 `DFAdef` 中。`Molecule` 现在同时持有 `dfadef`（必有）与 `xc_data: Option<DFA4REST>`（仅 legacy/DeepLearning 路线为 `Some`）；DFA 的全部消费者通过 `mol.dfadef` 的 accessor（`is_dfa_scf`、`is_hybrid`、`is_rsh`、`family_pos`、`fifth_rung_component`、`rsh_params_scf`、`is_nlc`、`vv10_params` 等）读取定义。
 
-## 2. 备选方案
+## 3. 备选方案
 
 旧版 API 并未删除：`DFA4REST` 的全部函数与 `Molecule.xc_data` field 仍然存在，只是正常调用路径上已无 consumer。因此在调试时暂时恢复旧版 API 是可行的；但恢复旧版 API 调试后，希望实现尽量写在新版 API 的框架下。
 
-## 3. 备注
+## 4. 备注
 
 具体的 API 细节仍然可以变动；本 ADR 只约束上述设计原则。新/旧 API 的对照见 [libxc 接口](../dft/libxc.md) 与 [parse_xc](../dft/parse_xc.md)。
