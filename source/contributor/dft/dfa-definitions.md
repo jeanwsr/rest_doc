@@ -25,8 +25,8 @@ When both `xc_scf` and `xc_nscf` are present it is a two-step (double-hybrid etc
 |---|---|
 | `DFAdef::new()` | an empty definition |
 | `parse_and_derive(xc, spin, print)` | the parse entry: xc string -> `DFAdef` |
-| `from_dfa4rest(&DFA4REST)` | the legacy/DeepLearning adapter (code arrays -> components) |
-| `to_dfa4rest()` / `to_xc_data()` | legacy bridges: convert back to the old DFA4REST (full / SCF-side only) |
+| `from_dfa4rest(&DFA4REST)` | the legacy/DeepLearning adapter (code arrays -> components; the only conversion direction on the production path) |
+| `to_dfa4rest()` / `to_xc_data()` | convert into the old DFA4REST representation (full / SCF-side only): used solely by the round-trip parity tests; no production consumer |
 | `update_pt2_params(os, ss)` | override the PT2 `(c_os, c_ss)` factors (ctrl keywords; also called during the DL-DFA iteration) |
 | `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | derive the total HFX coefficient of the SCF / final-energy functional from the components (written into the stored fields at parse time) |
 | `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | derive the RSH parameters from the components (raw `(omega, c_LR, c_SR - c_LR)` / consumer convention `(omega, c_LR, c_SR)`; written into the stored fields at parse time) |

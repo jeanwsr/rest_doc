@@ -25,8 +25,8 @@ pub struct DFAdef {
 |---|---|
 | `DFAdef::new()` | 空定义 |
 | `parse_and_derive(xc, spin, print)` | 解析入口：xc 字符串 -> `DFAdef` |
-| `from_dfa4rest(&DFA4REST)` | legacy/DeepLearning 路线的适配器（code-array -> 组分） |
-| `to_dfa4rest()` / `to_xc_data()` | legacy 桥：转为旧版 DFA4REST（全量 / 仅 SCF 侧） |
+| `from_dfa4rest(&DFA4REST)` | legacy/DeepLearning 路线的适配器（code-array -> 组分；生产路径的唯一转换方向） |
+| `to_dfa4rest()` / `to_xc_data()` | 转为旧版 DFA4REST 表示（全量 / 仅 SCF 侧）：仅 round-trip parity 测试使用，生产路径无 consumer |
 | `update_pt2_params(os, ss)` | 覆写 PT2 `(c_os, c_ss)` 因子（ctrl 关键词；DL-DFA 迭代中亦会调用） |
 | `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | 从组分推导 SCF / 最终能量泛函的总 HFX 系数（parse 时写入存储 field） |
 | `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | 从组分推导 RSH 参数（原始 `(omega, c_LR, c_SR - c_LR)` / 消费者约定 `(omega, c_LR, c_SR)`；parse 时写入存储 field） |
