@@ -26,7 +26,8 @@ pub struct DFAdef {
 | `DFAdef::new()` | 空定义 |
 | `parse_and_derive(xc, spin, print)` | 解析入口：xc 字符串 -> `DFAdef` |
 | `from_dfa4rest(&DFA4REST)` | legacy/DeepLearning 路线的适配器（code-array -> 组分；生产路径的唯一转换方向） |
-| `to_dfa4rest()` / `to_xc_data()` | 转为旧版 DFA4REST 表示（全量 / 仅 SCF 侧）：仅 round-trip parity 测试使用，生产路径无 consumer |
+| `to_dfa4rest()` | 转为旧版 DFA4REST 表示（全量）：仅 round-trip parity 测试使用，生产路径无 consumer |
+| `to_xc_data()` | 仅 SCF 侧的 DFA4REST：仅测试使用，计划移除 |
 | `update_pt2_params(os, ss)` | 覆写 PT2 `(c_os, c_ss)` 因子（ctrl 关键词；DL-DFA 迭代中亦会调用） |
 | `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | 从组分推导 SCF / 最终能量泛函的总 HFX 系数（parse 时写入存储 field） |
 | `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | 从组分推导 RSH 参数（原始 `(omega, c_LR, c_SR - c_LR)` / 消费者约定 `(omega, c_LR, c_SR)`；parse 时写入存储 field） |
@@ -106,6 +107,12 @@ pub enum ComponentType { HF, RSHF, PT2, RPA, SCSRPA, SBGE2, Disp, Libxc, Unknown
 | `post_xc_exc(&names, ...)` / `post_tabulated_exc(&funcs, ...)` | post-SCF 泛函的能量 |
 | `DFAdef::scf_func_list(spin)` / `nscf_func_list(spin)` / `func_list_from_components` | 定义 -> 计算列表的构造入口 |
 | `xc_part_of_name(name, spin, kind)` / `DFAdef::x_part` / `c_part` | 名称/定义 -> 纯 X 或纯 C 部分 |
+
+### XCData（导数求值包）
+
+`XCData`（`src/dft/num_int.rs`）是梯度/Hessian 侧的求值包：持有 func 列表 + `xc_type` + 密度来源（`dm` 或 `mo_coeffs`/`occ`）。产生链路：`mol.dfadef` -> `scf_func_list(spin)` / `func_list_from_components` -> 经 `NumInt::gen_xc_data`（`grad/rks.rs`、`grad/uks.rs`）或 `xc_skeleton_dao`（`grad/rdh.rs`、`grad/udh.rs`）构造 `XCData` -> `get_vxc_rayon_new` / `eval_xc_eff`。
+
+注意：`DFAdef::to_xc_data()`（旧版 DFA4REST 转换，计划移除）与 `XCData` 无关——同名不同物。
 
 ## 与旧版 DFA4REST API 的对照
 

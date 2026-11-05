@@ -26,7 +26,8 @@ When both `xc_scf` and `xc_nscf` are present it is a two-step (double-hybrid etc
 | `DFAdef::new()` | an empty definition |
 | `parse_and_derive(xc, spin, print)` | the parse entry: xc string -> `DFAdef` |
 | `from_dfa4rest(&DFA4REST)` | the legacy/DeepLearning adapter (code arrays -> components; the only conversion direction on the production path) |
-| `to_dfa4rest()` / `to_xc_data()` | convert into the old DFA4REST representation (full / SCF-side only): used solely by the round-trip parity tests; no production consumer |
+| `to_dfa4rest()` | convert into the old DFA4REST representation (full): used solely by the round-trip parity tests; no production consumer |
+| `to_xc_data()` | SCF-side-only DFA4REST: test-only, planned for removal |
 | `update_pt2_params(os, ss)` | override the PT2 `(c_os, c_ss)` factors (ctrl keywords; also called during the DL-DFA iteration) |
 | `get_hybrid_scf(spin)` / `get_hybrid_nscf(spin)` | derive the total HFX coefficient of the SCF / final-energy functional from the components (written into the stored fields at parse time) |
 | `get_rsh_scf(spin)` / `get_rsh_scf_lrsr(spin)` | derive the RSH parameters from the components (raw `(omega, c_LR, c_SR - c_LR)` / consumer convention `(omega, c_LR, c_SR)`; written into the stored fields at parse time) |
@@ -106,6 +107,12 @@ Definition and computation are decoupled: the computation functions live under `
 | `post_xc_exc(&names, ...)` / `post_tabulated_exc(&funcs, ...)` | post-SCF functional energies |
 | `DFAdef::scf_func_list(spin)` / `nscf_func_list(spin)` / `func_list_from_components` | definition -> evaluation-list builders |
 | `xc_part_of_name(name, spin, kind)` / `DFAdef::x_part` / `c_part` | name/definition -> pure X or pure C part |
+
+### XCData (the derivative-time bundle)
+
+`XCData` (`src/dft/num_int.rs`) is the gradient/Hessian-side evaluation bundle: it holds the func list + `xc_type` + the density sources (`dm` or `mo_coeffs`/`occ`). Production chain: `mol.dfadef` -> `scf_func_list(spin)` / `func_list_from_components` -> `XCData` built via `NumInt::gen_xc_data` (`grad/rks.rs`, `grad/uks.rs`) or `xc_skeleton_dao` (`grad/rdh.rs`, `grad/udh.rs`) -> `get_vxc_rayon_new` / `eval_xc_eff`.
+
+Note: `DFAdef::to_xc_data()` (the old DFA4REST conversion, planned for removal) is unrelated to `XCData` - same name, different things.
 
 ## Correspondence with the old DFA4REST API
 
